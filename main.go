@@ -315,17 +315,17 @@ func isPointInGeometry(lat, lon float64, geometryJSON string) bool {
 	if geometryJSON == "" {
 		return false
 	}
-	
+
 	// Convert to orb geometry directly from JSON bytes
 	geom, err := geojson.UnmarshalGeometry([]byte(geometryJSON))
 	if err != nil {
 		log.Printf("Error converting to orb geometry: %v", err)
 		return false
 	}
-	
+
 	// Create point
 	point := orb.Point{lon, lat}
-	
+
 	// Check if point is inside geometry
 	switch g := geom.Geometry().(type) {
 	case orb.Polygon:
@@ -346,22 +346,22 @@ func isPointInGeometry(lat, lon float64, geometryJSON string) bool {
 // Helper function to find entities containing a point
 func findContainingEntities(ctx context.Context, collection string, lat, lon float64) []map[string]interface{} {
 	var results []map[string]interface{}
-	
+
 	// Query all entities in the collection
 	iter := firestoreClient.Collection(collection).Documents(ctx)
 	defer iter.Stop()
-	
+
 	for {
 		doc, err := iter.Next()
 		if err != nil {
 			break
 		}
-		
+
 		var entity map[string]interface{}
 		if err := doc.DataTo(&entity); err != nil {
 			continue
 		}
-		
+
 		// Check if geometry exists and point is inside
 		if geometryJSON, ok := entity["geometry"].(string); ok && geometryJSON != "" {
 			if isPointInGeometry(lat, lon, geometryJSON) {
@@ -369,7 +369,7 @@ func findContainingEntities(ctx context.Context, collection string, lat, lon flo
 			}
 		}
 	}
-	
+
 	return results
 }
 
@@ -416,6 +416,7 @@ func main() {
 	router.HandleFunc("/sovereign-states", requireServiceAuth(getSovereignStatesHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/sovereign-states/{id}", requireServiceAuth(getSovereignStateHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/countries", requireServiceAuth(getCountriesHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/countries/bulk", requireServiceAuth(getBulkCountriesHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/countries/{id}", requireServiceAuth(getCountryHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/map-units", requireServiceAuth(getMapUnitsHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/map-units/{id}", requireServiceAuth(getMapUnitHandler)).Methods("GET", "OPTIONS")
@@ -1064,10 +1065,143 @@ func getLandmarksNearbyHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Bulk countries handler for Core Service integration
+func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Get all sovereign states
+	sovereignQuery := firestoreClient.Collection("sovereign_states").
+		Where("is_active", "==", true)
+
+	sovereignDocs, err := sovereignQuery.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting sovereign states: %v", err)
+		http.Error(w, "Failed to get sovereign states", http.StatusInternalServerError)
+		return
+	}
+
+	// Get all countries
+	countriesQuery := firestoreClient.Collection("countries").
+		Where("is_active", "==", true)
+
+	countryDocs, err := countriesQuery.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting countries: %v", err)
+		http.Error(w, "Failed to get countries", http.StatusInternalServerError)
+		return
+	}
+
+	// Get all map units
+	mapUnitsQuery := firestoreClient.Collection("map_units").
+		Where("is_active", "==", true)
+
+	mapUnitDocs, err := mapUnitsQuery.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting map units: %v", err)
+		http.Error(w, "Failed to get map units", http.StatusInternalServerError)
+		return
+	}
+
+	// Build hierarchical structure
+	var result []map[string]interface{}
+
+	// Process sovereign states first (they get map units)
+	sovereignMap := make(map[string]map[string]interface{})
+	for _, doc := range sovereignDocs {
+		var sovereign SovereignState
+		if err := doc.DataTo(&sovereign); err != nil {
+			continue
+		}
+
+		entry := map[string]interface{}{
+			"id":            sovereign.ID,
+			"name":          sovereign.Name,
+			"official_name": sovereign.OfficialName,
+			"type":          "sovereign_state",
+			"iso_alpha2":    sovereign.ISOAlpha2,
+			"iso_alpha3":    sovereign.ISOAlpha3,
+			"flag_emoji":    sovereign.FlagEmoji,
+			"capital":       sovereign.Capital,
+			"population":    sovereign.Population,
+			"area_km2":      sovereign.AreaKM2,
+			"bounds":        sovereign.Bounds,
+			"map_units":     []map[string]interface{}{},
+		}
+
+		sovereignMap[sovereign.ID] = entry
+		result = append(result, entry)
+	}
+
+	// Add map units to their sovereign states
+	for _, doc := range mapUnitDocs {
+		var mapUnit MapUnit
+		if err := doc.DataTo(&mapUnit); err != nil {
+			continue
+		}
+
+		if sovereignEntry, exists := sovereignMap[mapUnit.SovereignStateID]; exists {
+			mapUnitEntry := map[string]interface{}{
+				"id":            mapUnit.ID,
+				"name":          mapUnit.Name,
+				"official_name": mapUnit.OfficialName,
+				"type":          "map_unit",
+				"bounds":        mapUnit.Bounds,
+				"population":    mapUnit.Population,
+				"area_km2":      mapUnit.AreaKM2,
+			}
+
+			mapUnits := sovereignEntry["map_units"].([]map[string]interface{})
+			sovereignEntry["map_units"] = append(mapUnits, mapUnitEntry)
+		}
+	}
+
+	// Add countries that aren't sovereign states
+	for _, doc := range countryDocs {
+		var country Country
+		if err := doc.DataTo(&country); err != nil {
+			continue
+		}
+
+		// Skip if this country is already represented as a sovereign state
+		if _, exists := sovereignMap[country.ID]; exists {
+			continue
+		}
+
+		entry := map[string]interface{}{
+			"id":            country.ID,
+			"name":          country.Name,
+			"official_name": country.OfficialName,
+			"type":          "country",
+			"iso_alpha2":    country.ISOAlpha2,
+			"iso_alpha3":    country.ISOAlpha3,
+			"capital":       country.Capital,
+			"population":    country.Population,
+			"area_km2":      country.AreaKM2,
+			"bounds":        country.Bounds,
+			"map_units":     nil,
+		}
+
+		result = append(result, entry)
+	}
+
+	response := map[string]interface{}{
+		"countries": result,
+		"count":     len(result),
+		"metadata": map[string]interface{}{
+			"sovereign_states": len(sovereignDocs),
+			"total_countries":  len(countryDocs),
+			"total_map_units":  len(mapUnitDocs),
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Boundaries handlers
 func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-	
+
 	// Parse coordinates
 	lat, err := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
 	if err != nil {
@@ -1083,7 +1217,7 @@ func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Find containing boundaries by checking all hierarchical levels
 	var boundaries []map[string]interface{}
-	
+
 	// Check sovereign states
 	if states := findContainingEntities(ctx, "sovereign_states", lat, lon); len(states) > 0 {
 		boundaries = append(boundaries, map[string]interface{}{
@@ -1091,23 +1225,23 @@ func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
 			"entities": states,
 		})
 	}
-	
-	// Check countries  
+
+	// Check countries
 	if countries := findContainingEntities(ctx, "countries", lat, lon); len(countries) > 0 {
 		boundaries = append(boundaries, map[string]interface{}{
 			"type":     "country",
 			"entities": countries,
 		})
 	}
-	
+
 	// Check map units
 	if units := findContainingEntities(ctx, "map_units", lat, lon); len(units) > 0 {
 		boundaries = append(boundaries, map[string]interface{}{
-			"type":     "map_unit", 
+			"type":     "map_unit",
 			"entities": units,
 		})
 	}
-	
+
 	// Check map subunits
 	if subunits := findContainingEntities(ctx, "map_subunits", lat, lon); len(subunits) > 0 {
 		boundaries = append(boundaries, map[string]interface{}{
@@ -1115,7 +1249,7 @@ func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
 			"entities": subunits,
 		})
 	}
-	
+
 	response := map[string]interface{}{
 		"lat":        lat,
 		"lon":        lon,

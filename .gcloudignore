@@ -1,0 +1,52 @@
+# This file specifies files that are intentionally untracked by Git.
+# This file is used by Cloud Build to ignore files during build.
+
+.gcloudignore
+.git
+.gitignore
+README.md
+
+# Node.js dependencies
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+bin/
+tmp/
+temp/
+
+# Data munging directories (exclude from builds)
+city data/
