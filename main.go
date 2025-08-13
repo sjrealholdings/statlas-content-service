@@ -620,8 +620,6 @@ func getLandmarksNearbyHandler(w http.ResponseWriter, r *http.Request) {
 
 // Boundaries handlers
 func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-
 	// Parse coordinates
 	lat, err := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
 	if err != nil {
