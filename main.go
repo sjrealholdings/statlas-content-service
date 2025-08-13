@@ -15,6 +15,9 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/gorilla/mux"
+	"github.com/paulmach/orb"
+	"github.com/paulmach/orb/geojson"
+	"github.com/paulmach/orb/planar"
 )
 
 // SovereignState represents a passport-issuing sovereign entity (209 total)
@@ -307,6 +310,69 @@ const (
 	PORT = "8083" // Different port from core service (8082)
 )
 
+// Helper function to check if a point is inside a geometry
+func isPointInGeometry(lat, lon float64, geometryJSON string) bool {
+	if geometryJSON == "" {
+		return false
+	}
+	
+	// Convert to orb geometry directly from JSON bytes
+	geom, err := geojson.UnmarshalGeometry([]byte(geometryJSON))
+	if err != nil {
+		log.Printf("Error converting to orb geometry: %v", err)
+		return false
+	}
+	
+	// Create point
+	point := orb.Point{lon, lat}
+	
+	// Check if point is inside geometry
+	switch g := geom.Geometry().(type) {
+	case orb.Polygon:
+		return planar.PolygonContains(g, point)
+	case orb.MultiPolygon:
+		for _, poly := range g {
+			if planar.PolygonContains(poly, point) {
+				return true
+			}
+		}
+		return false
+	default:
+		log.Printf("Unsupported geometry type: %T", g)
+		return false
+	}
+}
+
+// Helper function to find entities containing a point
+func findContainingEntities(ctx context.Context, collection string, lat, lon float64) []map[string]interface{} {
+	var results []map[string]interface{}
+	
+	// Query all entities in the collection
+	iter := firestoreClient.Collection(collection).Documents(ctx)
+	defer iter.Stop()
+	
+	for {
+		doc, err := iter.Next()
+		if err != nil {
+			break
+		}
+		
+		var entity map[string]interface{}
+		if err := doc.DataTo(&entity); err != nil {
+			continue
+		}
+		
+		// Check if geometry exists and point is inside
+		if geometryJSON, ok := entity["geometry"].(string); ok && geometryJSON != "" {
+			if isPointInGeometry(lat, lon, geometryJSON) {
+				results = append(results, entity)
+			}
+		}
+	}
+	
+	return results
+}
+
 func main() {
 	ctx := context.Background()
 	startTime = time.Now()
@@ -376,8 +442,8 @@ func main() {
 
 	// Boundaries & Geographic Features endpoints
 	router.HandleFunc("/boundaries", requireServiceAuth(getBoundariesHandler)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/boundaries/{id}", requireServiceAuth(getBoundaryHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/boundaries/containing", requireServiceAuth(getBoundariesContainingHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/boundaries/{id}", requireServiceAuth(getBoundaryHandler)).Methods("GET", "OPTIONS")
 
 	// Bulk & Integration APIs
 	router.HandleFunc("/boundaries/batch-lookup", requireServiceAuth(batchLookupBoundariesHandler)).Methods("POST", "OPTIONS")
@@ -1000,6 +1066,8 @@ func getLandmarksNearbyHandler(w http.ResponseWriter, r *http.Request) {
 
 // Boundaries handlers
 func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	
 	// Parse coordinates
 	lat, err := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
 	if err != nil {
@@ -1013,11 +1081,44 @@ func getBoundariesContainingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, return mock boundaries based on coordinates
-	// In a full implementation, this would do point-in-polygon queries
-	boundaries := getMockBoundariesForPoint(lat, lon)
-
+	// Find containing boundaries by checking all hierarchical levels
+	var boundaries []map[string]interface{}
+	
+	// Check sovereign states
+	if states := findContainingEntities(ctx, "sovereign_states", lat, lon); len(states) > 0 {
+		boundaries = append(boundaries, map[string]interface{}{
+			"type":     "sovereign_state",
+			"entities": states,
+		})
+	}
+	
+	// Check countries  
+	if countries := findContainingEntities(ctx, "countries", lat, lon); len(countries) > 0 {
+		boundaries = append(boundaries, map[string]interface{}{
+			"type":     "country",
+			"entities": countries,
+		})
+	}
+	
+	// Check map units
+	if units := findContainingEntities(ctx, "map_units", lat, lon); len(units) > 0 {
+		boundaries = append(boundaries, map[string]interface{}{
+			"type":     "map_unit", 
+			"entities": units,
+		})
+	}
+	
+	// Check map subunits
+	if subunits := findContainingEntities(ctx, "map_subunits", lat, lon); len(subunits) > 0 {
+		boundaries = append(boundaries, map[string]interface{}{
+			"type":     "map_subunit",
+			"entities": subunits,
+		})
+	}
+	
 	response := map[string]interface{}{
+		"lat":        lat,
+		"lon":        lon,
 		"boundaries": boundaries,
 		"count":      len(boundaries),
 	}
