@@ -109,3 +109,16 @@ import-sample-data:
 	python3 scripts/import_sample_countries.py --project-id $(PROJECT_ID)
 	python3 scripts/import_sample_landmarks.py --project-id $(PROJECT_ID)
 	@echo "Sample data import complete!"
+
+# Import Natural Earth data
+.PHONY: import-natural-earth
+import-natural-earth:
+	@echo "Importing Natural Earth 10m Cultural data..."
+	python3 scripts/import_natural_earth_data.py --project-id $(PROJECT_ID)
+	@echo "Natural Earth data import complete!"
+
+# Import Natural Earth data (dry run)
+.PHONY: import-natural-earth-dry-run
+import-natural-earth-dry-run:
+	@echo "Natural Earth data import (dry run)..."
+	python3 scripts/import_natural_earth_data.py --project-id $(PROJECT_ID) --dry-run

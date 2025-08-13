@@ -17,14 +17,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Country represents a country with reference data
-type Country struct {
-	ID           string    `firestore:"id" json:"id"`
-	Name         string    `firestore:"name" json:"name"`
-	OfficialName string    `firestore:"official_name" json:"official_name"`
-	ISOAlpha2    string    `firestore:"iso_alpha2" json:"iso_alpha2"`
-	ISOAlpha3    string    `firestore:"iso_alpha3" json:"iso_alpha3"`
-	ISONumerical int       `firestore:"iso_numeric" json:"iso_numeric"`
+// SovereignState represents a passport-issuing sovereign entity (209 total)
+type SovereignState struct {
+	ID           string    `firestore:"id" json:"id"`                       // e.g. "united_kingdom"
+	Name         string    `firestore:"name" json:"name"`                   // e.g. "United Kingdom"
+	OfficialName string    `firestore:"official_name" json:"official_name"` // e.g. "United Kingdom of Great Britain and Northern Ireland"
+	ISOAlpha2    string    `firestore:"iso_alpha2" json:"iso_alpha2"`       // ISO 3166-1 alpha-2
+	ISOAlpha3    string    `firestore:"iso_alpha3" json:"iso_alpha3"`       // ISO 3166-1 alpha-3
+	ISONumerical int       `firestore:"iso_numeric" json:"iso_numeric"`     // ISO 3166-1 numeric
 	FlagURL      string    `firestore:"flag_url" json:"flag_url"`
 	FlagEmoji    string    `firestore:"flag_emoji" json:"flag_emoji"`
 	Bounds       Bounds    `firestore:"bounds" json:"bounds"`
@@ -33,9 +33,72 @@ type Country struct {
 	AreaKM2      float64   `firestore:"area_km2" json:"area_km2"`
 	CurrencyCode string    `firestore:"currency_code" json:"currency_code"`
 	Languages    []string  `firestore:"languages" json:"languages"`
+	Geometry     string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
 	CreatedAt    time.Time `firestore:"created_at" json:"created_at"`
 	UpdatedAt    time.Time `firestore:"updated_at" json:"updated_at"`
 	IsActive     bool      `firestore:"is_active" json:"is_active"`
+}
+
+// Country represents a distinct country entity (258 total)
+type Country struct {
+	ID               string    `firestore:"id" json:"id"`                                 // e.g. "scotland"
+	SovereignStateID string    `firestore:"sovereign_state_id" json:"sovereign_state_id"` // e.g. "united_kingdom"
+	Name             string    `firestore:"name" json:"name"`                             // e.g. "Scotland"
+	OfficialName     string    `firestore:"official_name" json:"official_name"`
+	Type             string    `firestore:"type" json:"type"`             // "Country", "Territory", "Dependency"
+	Level            int       `firestore:"level" json:"level"`           // Natural Earth level (1-2)
+	ISOAlpha2        string    `firestore:"iso_alpha2" json:"iso_alpha2"` // May be empty for sub-countries
+	ISOAlpha3        string    `firestore:"iso_alpha3" json:"iso_alpha3"` // May be empty for sub-countries
+	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
+	Capital          string    `firestore:"capital" json:"capital"`
+	Population       int64     `firestore:"population" json:"population"`
+	AreaKM2          float64   `firestore:"area_km2" json:"area_km2"`
+	Geometry         string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt        time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt        time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive         bool      `firestore:"is_active" json:"is_active"`
+}
+
+// MapUnit represents dependencies and territories (298 total)
+type MapUnit struct {
+	ID               string    `firestore:"id" json:"id"`                                 // e.g. "american_samoa"
+	SovereignStateID string    `firestore:"sovereign_state_id" json:"sovereign_state_id"` // e.g. "united_states"
+	CountryID        string    `firestore:"country_id" json:"country_id"`                 // Parent country if applicable
+	Name             string    `firestore:"name" json:"name"`                             // e.g. "American Samoa"
+	OfficialName     string    `firestore:"official_name" json:"official_name"`
+	Type             string    `firestore:"type" json:"type"`               // "Dependency", "Territory", "Sovereign country"
+	Level            int       `firestore:"level" json:"level"`             // Natural Earth level (1-3)
+	AdminLevel       string    `firestore:"admin_level" json:"admin_level"` // Natural Earth admin level
+	ISOAlpha2        string    `firestore:"iso_alpha2" json:"iso_alpha2"`
+	ISOAlpha3        string    `firestore:"iso_alpha3" json:"iso_alpha3"`
+	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
+	Population       int64     `firestore:"population" json:"population"`
+	AreaKM2          float64   `firestore:"area_km2" json:"area_km2"`
+	Geometry         string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt        time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt        time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive         bool      `firestore:"is_active" json:"is_active"`
+}
+
+// MapSubunit represents non-contiguous geographic regions (360 total)
+type MapSubunit struct {
+	ID               string    `firestore:"id" json:"id"`                                 // e.g. "alaska"
+	SovereignStateID string    `firestore:"sovereign_state_id" json:"sovereign_state_id"` // e.g. "united_states"
+	CountryID        string    `firestore:"country_id" json:"country_id"`                 // e.g. "united_states"
+	MapUnitID        string    `firestore:"map_unit_id" json:"map_unit_id"`               // e.g. "united_states"
+	Name             string    `firestore:"name" json:"name"`                             // e.g. "Alaska"
+	OfficialName     string    `firestore:"official_name" json:"official_name"`
+	Type             string    `firestore:"type" json:"type"`               // "Country", "Dependency", etc.
+	Level            int       `firestore:"level" json:"level"`             // Natural Earth level (1-4)
+	AdminLevel       string    `firestore:"admin_level" json:"admin_level"` // Natural Earth admin level
+	IsMainland       bool      `firestore:"is_mainland" json:"is_mainland"` // True for mainland, false for islands/territories
+	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
+	Population       int64     `firestore:"population" json:"population"`
+	AreaKM2          float64   `firestore:"area_km2" json:"area_km2"`
+	Geometry         string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt        time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt        time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive         bool      `firestore:"is_active" json:"is_active"`
 }
 
 // State represents a state/province/region
@@ -113,7 +176,7 @@ type Boundary struct {
 	StateID               string                 `firestore:"state_id" json:"state_id"`
 	CityID                string                 `firestore:"city_id" json:"city_id"`
 	ParentBoundaryID      string                 `firestore:"parent_boundary_id" json:"parent_boundary_id"`
-	Geometry              map[string]interface{} `firestore:"geometry" json:"geometry"` // GeoJSON
+	Geometry              string                 `firestore:"geometry" json:"geometry"` // GeoJSON as string
 	Properties            map[string]interface{} `firestore:"properties" json:"properties"`
 	ResolutionRequirement string                 `firestore:"resolution_requirement" json:"resolution_requirement"`
 	OverlaysIDs           []string               `firestore:"overlays_ids" json:"overlays_ids"`
@@ -283,9 +346,22 @@ func main() {
 	// Metrics endpoint (no auth required for monitoring systems)
 	router.HandleFunc("/metrics", metricsHandler).Methods("GET")
 
-	// Geographic Reference Data endpoints
+	// Geographic Reference Data endpoints - New Hierarchical Structure
+	router.HandleFunc("/sovereign-states", requireServiceAuth(getSovereignStatesHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/sovereign-states/{id}", requireServiceAuth(getSovereignStateHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/countries", requireServiceAuth(getCountriesHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/countries/{id}", requireServiceAuth(getCountryHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/map-units", requireServiceAuth(getMapUnitsHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/map-units/{id}", requireServiceAuth(getMapUnitHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/map-subunits", requireServiceAuth(getMapSubunitsHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/map-subunits/{id}", requireServiceAuth(getMapSubunitHandler)).Methods("GET", "OPTIONS")
+
+	// Hierarchical queries
+	router.HandleFunc("/sovereign-states/{id}/countries", requireServiceAuth(getSovereignStateCountriesHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/countries/{id}/map-units", requireServiceAuth(getCountryMapUnitsHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/map-units/{id}/subunits", requireServiceAuth(getMapUnitSubunitsHandler)).Methods("GET", "OPTIONS")
+
+	// Legacy endpoint (kept for backward compatibility)
 	router.HandleFunc("/countries/{id}/states", requireServiceAuth(getCountryStatesHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/states/{id}", requireServiceAuth(getStateHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/states/{id}/cities", requireServiceAuth(getStateCitiesHandler)).Methods("GET", "OPTIONS")
@@ -416,16 +492,77 @@ statlas_content_info{version="1.0.0",service="statlas-content-service"} 1
 	w.Write([]byte(metrics))
 }
 
-// Geographic Reference Data handlers
-func getCountriesHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+// Geographic Reference Data handlers - New Hierarchical Structure
 
-	// Get query parameters for filtering/pagination
+// Sovereign States handlers (209 total)
+func getSovereignStatesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
 	limit := getIntQueryParam(r, "limit", 50)
 
-	query := firestoreClient.Collection("countries").
+	query := firestoreClient.Collection("sovereign_states").
 		Where("is_active", "==", true).
 		Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting sovereign states: %v", err)
+		http.Error(w, "Failed to get sovereign states", http.StatusInternalServerError)
+		return
+	}
+
+	var sovereignStates []SovereignState
+	for _, doc := range docs {
+		var state SovereignState
+		if err := doc.DataTo(&state); err != nil {
+			log.Printf("Error parsing sovereign state data: %v", err)
+			continue
+		}
+		sovereignStates = append(sovereignStates, state)
+	}
+
+	response := map[string]interface{}{
+		"sovereign_states": sovereignStates,
+		"count":            len(sovereignStates),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getSovereignStateHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	vars := mux.Vars(r)
+	stateID := vars["id"]
+
+	doc, err := firestoreClient.Collection("sovereign_states").Doc(stateID).Get(ctx)
+	if err != nil {
+		http.Error(w, "Sovereign state not found", http.StatusNotFound)
+		return
+	}
+
+	var state SovereignState
+	if err := doc.DataTo(&state); err != nil {
+		http.Error(w, "Failed to parse sovereign state data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(state)
+}
+
+// Countries handlers (258 total)
+func getCountriesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	limit := getIntQueryParam(r, "limit", 50)
+	sovereignStateID := r.URL.Query().Get("sovereign_state")
+
+	query := firestoreClient.Collection("countries").Where("is_active", "==", true)
+
+	if sovereignStateID != "" {
+		query = query.Where("sovereign_state_id", "==", sovereignStateID)
+	}
+
+	query = query.Limit(limit)
 
 	docs, err := query.Documents(ctx).GetAll()
 	if err != nil {
@@ -472,6 +609,249 @@ func getCountryHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(country)
+}
+
+// Map Units handlers (298 total)
+func getMapUnitsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	limit := getIntQueryParam(r, "limit", 50)
+	sovereignStateID := r.URL.Query().Get("sovereign_state")
+	countryID := r.URL.Query().Get("country")
+
+	query := firestoreClient.Collection("map_units").Where("is_active", "==", true)
+
+	if sovereignStateID != "" {
+		query = query.Where("sovereign_state_id", "==", sovereignStateID)
+	}
+	if countryID != "" {
+		query = query.Where("country_id", "==", countryID)
+	}
+
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting map units: %v", err)
+		http.Error(w, "Failed to get map units", http.StatusInternalServerError)
+		return
+	}
+
+	var mapUnits []MapUnit
+	for _, doc := range docs {
+		var unit MapUnit
+		if err := doc.DataTo(&unit); err != nil {
+			log.Printf("Error parsing map unit data: %v", err)
+			continue
+		}
+		mapUnits = append(mapUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"map_units": mapUnits,
+		"count":     len(mapUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getMapUnitHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	vars := mux.Vars(r)
+	unitID := vars["id"]
+
+	doc, err := firestoreClient.Collection("map_units").Doc(unitID).Get(ctx)
+	if err != nil {
+		http.Error(w, "Map unit not found", http.StatusNotFound)
+		return
+	}
+
+	var unit MapUnit
+	if err := doc.DataTo(&unit); err != nil {
+		http.Error(w, "Failed to parse map unit data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(unit)
+}
+
+// Map Subunits handlers (360 total)
+func getMapSubunitsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	limit := getIntQueryParam(r, "limit", 50)
+	sovereignStateID := r.URL.Query().Get("sovereign_state")
+	countryID := r.URL.Query().Get("country")
+	mapUnitID := r.URL.Query().Get("map_unit")
+
+	query := firestoreClient.Collection("map_subunits").Where("is_active", "==", true)
+
+	if sovereignStateID != "" {
+		query = query.Where("sovereign_state_id", "==", sovereignStateID)
+	}
+	if countryID != "" {
+		query = query.Where("country_id", "==", countryID)
+	}
+	if mapUnitID != "" {
+		query = query.Where("map_unit_id", "==", mapUnitID)
+	}
+
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting map subunits: %v", err)
+		http.Error(w, "Failed to get map subunits", http.StatusInternalServerError)
+		return
+	}
+
+	var mapSubunits []MapSubunit
+	for _, doc := range docs {
+		var subunit MapSubunit
+		if err := doc.DataTo(&subunit); err != nil {
+			log.Printf("Error parsing map subunit data: %v", err)
+			continue
+		}
+		mapSubunits = append(mapSubunits, subunit)
+	}
+
+	response := map[string]interface{}{
+		"map_subunits": mapSubunits,
+		"count":        len(mapSubunits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getMapSubunitHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	vars := mux.Vars(r)
+	subunitID := vars["id"]
+
+	doc, err := firestoreClient.Collection("map_subunits").Doc(subunitID).Get(ctx)
+	if err != nil {
+		http.Error(w, "Map subunit not found", http.StatusNotFound)
+		return
+	}
+
+	var subunit MapSubunit
+	if err := doc.DataTo(&subunit); err != nil {
+		http.Error(w, "Failed to parse map subunit data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(subunit)
+}
+
+// Hierarchical relationship handlers
+func getSovereignStateCountriesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	vars := mux.Vars(r)
+	stateID := vars["id"]
+	limit := getIntQueryParam(r, "limit", 50)
+
+	query := firestoreClient.Collection("countries").
+		Where("sovereign_state_id", "==", stateID).
+		Where("is_active", "==", true).
+		Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting countries for sovereign state: %v", err)
+		http.Error(w, "Failed to get countries", http.StatusInternalServerError)
+		return
+	}
+
+	var countries []Country
+	for _, doc := range docs {
+		var country Country
+		if err := doc.DataTo(&country); err != nil {
+			continue
+		}
+		countries = append(countries, country)
+	}
+
+	response := map[string]interface{}{
+		"countries": countries,
+		"count":     len(countries),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getCountryMapUnitsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	vars := mux.Vars(r)
+	countryID := vars["id"]
+	limit := getIntQueryParam(r, "limit", 50)
+
+	query := firestoreClient.Collection("map_units").
+		Where("country_id", "==", countryID).
+		Where("is_active", "==", true).
+		Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting map units for country: %v", err)
+		http.Error(w, "Failed to get map units", http.StatusInternalServerError)
+		return
+	}
+
+	var mapUnits []MapUnit
+	for _, doc := range docs {
+		var unit MapUnit
+		if err := doc.DataTo(&unit); err != nil {
+			continue
+		}
+		mapUnits = append(mapUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"map_units": mapUnits,
+		"count":     len(mapUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getMapUnitSubunitsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	vars := mux.Vars(r)
+	unitID := vars["id"]
+	limit := getIntQueryParam(r, "limit", 50)
+
+	query := firestoreClient.Collection("map_subunits").
+		Where("map_unit_id", "==", unitID).
+		Where("is_active", "==", true).
+		Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting subunits for map unit: %v", err)
+		http.Error(w, "Failed to get map subunits", http.StatusInternalServerError)
+		return
+	}
+
+	var mapSubunits []MapSubunit
+	for _, doc := range docs {
+		var subunit MapSubunit
+		if err := doc.DataTo(&subunit); err != nil {
+			continue
+		}
+		mapSubunits = append(mapSubunits, subunit)
+	}
+
+	response := map[string]interface{}{
+		"map_subunits": mapSubunits,
+		"count":        len(mapSubunits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Landmarks handlers
