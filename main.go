@@ -104,6 +104,101 @@ type MapSubunit struct {
 	IsActive         bool      `firestore:"is_active" json:"is_active"`
 }
 
+// AdminLevel1 represents first-level administrative divisions (states, provinces, regions)
+type AdminLevel1 struct {
+	ID          string    `firestore:"id" json:"id"`                   // GADM GID_1 (e.g. "USA.1_1")
+	Name        string    `firestore:"name" json:"name"`               // e.g. "California"
+	CountryGID  string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0 (e.g. "USA")
+	CountryName string    `firestore:"country_name" json:"country_name"`
+	AdminType   string    `firestore:"admin_type" json:"admin_type"`     // Local type name
+	AdminTypeEN string    `firestore:"admin_type_en" json:"admin_type_en"` // English type name (State, Province, etc.)
+	Bounds      Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry    string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt   time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive    bool      `firestore:"is_active" json:"is_active"`
+}
+
+// AdminLevel2 represents second-level administrative divisions (counties, districts)
+type AdminLevel2 struct {
+	ID          string    `firestore:"id" json:"id"`                   // GADM GID_2
+	Name        string    `firestore:"name" json:"name"`               // e.g. "Los Angeles County"
+	CountryGID  string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0
+	CountryName string    `firestore:"country_name" json:"country_name"`
+	StateGID    string    `firestore:"state_gid" json:"state_gid"`     // GADM GID_1
+	StateName   string    `firestore:"state_name" json:"state_name"`
+	AdminType   string    `firestore:"admin_type" json:"admin_type"`
+	AdminTypeEN string    `firestore:"admin_type_en" json:"admin_type_en"` // County, District, etc.
+	Bounds      Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry    string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt   time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive    bool      `firestore:"is_active" json:"is_active"`
+}
+
+// AdminLevel3 represents third-level administrative divisions (municipalities, cities)
+type AdminLevel3 struct {
+	ID               string    `firestore:"id" json:"id"`                             // GADM GID_3
+	Name             string    `firestore:"name" json:"name"`                         // e.g. "Los Angeles"
+	CountryGID       string    `firestore:"country_gid" json:"country_gid"`           // GADM GID_0
+	CountryName      string    `firestore:"country_name" json:"country_name"`
+	StateGID         string    `firestore:"state_gid" json:"state_gid"`               // GADM GID_1
+	StateName        string    `firestore:"state_name" json:"state_name"`
+	CountyGID        string    `firestore:"county_gid" json:"county_gid"`             // GADM GID_2
+	CountyName       string    `firestore:"county_name" json:"county_name"`
+	AdminType        string    `firestore:"admin_type" json:"admin_type"`
+	AdminTypeEN      string    `firestore:"admin_type_en" json:"admin_type_en"`       // Municipality, City, etc.
+	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry         string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt        time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt        time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive         bool      `firestore:"is_active" json:"is_active"`
+}
+
+// AdminLevel4 represents fourth-level administrative divisions (wards, villages)
+type AdminLevel4 struct {
+	ID                 string    `firestore:"id" json:"id"`                               // GADM GID_4
+	Name               string    `firestore:"name" json:"name"`                           // e.g. "Downtown Ward"
+	CountryGID         string    `firestore:"country_gid" json:"country_gid"`             // GADM GID_0
+	CountryName        string    `firestore:"country_name" json:"country_name"`
+	StateGID           string    `firestore:"state_gid" json:"state_gid"`                 // GADM GID_1
+	StateName          string    `firestore:"state_name" json:"state_name"`
+	CountyGID          string    `firestore:"county_gid" json:"county_gid"`               // GADM GID_2
+	CountyName         string    `firestore:"county_name" json:"county_name"`
+	MunicipalityGID    string    `firestore:"municipality_gid" json:"municipality_gid"`   // GADM GID_3
+	MunicipalityName   string    `firestore:"municipality_name" json:"municipality_name"`
+	AdminType          string    `firestore:"admin_type" json:"admin_type"`
+	AdminTypeEN        string    `firestore:"admin_type_en" json:"admin_type_en"`         // Ward, Village, etc.
+	Bounds             Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry           string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt          time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt          time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive           bool      `firestore:"is_active" json:"is_active"`
+}
+
+// AdminLevel5 represents fifth-level administrative divisions (neighborhoods, sub-villages)
+type AdminLevel5 struct {
+	ID                 string    `firestore:"id" json:"id"`                               // GADM GID_5
+	Name               string    `firestore:"name" json:"name"`                           // e.g. "Financial District"
+	CountryGID         string    `firestore:"country_gid" json:"country_gid"`             // GADM GID_0
+	CountryName        string    `firestore:"country_name" json:"country_name"`
+	StateGID           string    `firestore:"state_gid" json:"state_gid"`                 // GADM GID_1
+	StateName          string    `firestore:"state_name" json:"state_name"`
+	CountyGID          string    `firestore:"county_gid" json:"county_gid"`               // GADM GID_2
+	CountyName         string    `firestore:"county_name" json:"county_name"`
+	MunicipalityGID    string    `firestore:"municipality_gid" json:"municipality_gid"`   // GADM GID_3
+	MunicipalityName   string    `firestore:"municipality_name" json:"municipality_name"`
+	WardGID            string    `firestore:"ward_gid" json:"ward_gid"`                   // GADM GID_4
+	WardName           string    `firestore:"ward_name" json:"ward_name"`
+	AdminType          string    `firestore:"admin_type" json:"admin_type"`
+	AdminTypeEN        string    `firestore:"admin_type_en" json:"admin_type_en"`         // Neighborhood, Sub-village, etc.
+	Bounds             Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry           string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt          time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt          time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive           bool      `firestore:"is_active" json:"is_active"`
+}
+
 // State represents a state/province/region
 type State struct {
 	ID           string      `firestore:"id" json:"id"`
@@ -440,6 +535,21 @@ func main() {
 	router.HandleFunc("/landmarks/nearby", requireServiceAuth(getLandmarksNearbyHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/restaurants", requireServiceAuth(getRestaurantsHandler)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/restaurants/michelin", requireServiceAuth(getMichelinRestaurantsHandler)).Methods("GET", "OPTIONS")
+
+	// Administrative Boundaries endpoints (GADM data)
+	router.HandleFunc("/admin/level-1", requireServiceAuth(getAdminLevel1Handler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-1/{id}", requireServiceAuth(getAdminLevel1ByIdHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-2", requireServiceAuth(getAdminLevel2Handler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-2/{id}", requireServiceAuth(getAdminLevel2ByIdHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-3", requireServiceAuth(getAdminLevel3Handler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-3/{id}", requireServiceAuth(getAdminLevel3ByIdHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-4", requireServiceAuth(getAdminLevel4Handler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-4/{id}", requireServiceAuth(getAdminLevel4ByIdHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-5", requireServiceAuth(getAdminLevel5Handler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/level-5/{id}", requireServiceAuth(getAdminLevel5ByIdHandler)).Methods("GET", "OPTIONS")
+
+	// Comprehensive location lookup
+	router.HandleFunc("/location/lookup", requireServiceAuth(getLocationLookupHandler)).Methods("GET", "OPTIONS")
 
 	// Boundaries & Geographic Features endpoints
 	router.HandleFunc("/boundaries", requireServiceAuth(getBoundariesHandler)).Methods("GET", "OPTIONS")
@@ -1426,6 +1536,450 @@ func createLandmarkHandler(w http.ResponseWriter, r *http.Request) {
 
 func createBoundaryHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
+
+// Administrative Level 1 (States/Provinces) handlers
+func getAdminLevel1Handler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Query parameters
+	countryGID := r.URL.Query().Get("country")
+	limit := 100
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+			limit = l
+		}
+	}
+
+	// Build query
+	query := firestoreClient.Collection("admin_level_1").Where("is_active", "==", true)
+	if countryGID != "" {
+		query = query.Where("country_gid", "==", countryGID)
+	}
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting admin level 1: %v", err)
+		http.Error(w, "Failed to get administrative divisions", http.StatusInternalServerError)
+		return
+	}
+
+	var adminUnits []AdminLevel1
+	for _, doc := range docs {
+		var unit AdminLevel1
+		if err := doc.DataTo(&unit); err != nil {
+			continue
+		}
+		adminUnits = append(adminUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"admin_level_1": adminUnits,
+		"count":         len(adminUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getAdminLevel1ByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	ctx := context.Background()
+	doc, err := firestoreClient.Collection("admin_level_1").Doc(id).Get(ctx)
+	if err != nil {
+		http.Error(w, "Administrative division not found", http.StatusNotFound)
+		return
+	}
+
+	var adminUnit AdminLevel1
+	if err := doc.DataTo(&adminUnit); err != nil {
+		http.Error(w, "Failed to parse administrative division", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(adminUnit)
+}
+
+// Administrative Level 2 (Counties/Districts) handlers
+func getAdminLevel2Handler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Query parameters
+	countryGID := r.URL.Query().Get("country")
+	stateGID := r.URL.Query().Get("state")
+	limit := 100
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+			limit = l
+		}
+	}
+
+	// Build query
+	query := firestoreClient.Collection("admin_level_2").Where("is_active", "==", true)
+	if countryGID != "" {
+		query = query.Where("country_gid", "==", countryGID)
+	}
+	if stateGID != "" {
+		query = query.Where("state_gid", "==", stateGID)
+	}
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting admin level 2: %v", err)
+		http.Error(w, "Failed to get administrative divisions", http.StatusInternalServerError)
+		return
+	}
+
+	var adminUnits []AdminLevel2
+	for _, doc := range docs {
+		var unit AdminLevel2
+		if err := doc.DataTo(&unit); err != nil {
+			continue
+		}
+		adminUnits = append(adminUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"admin_level_2": adminUnits,
+		"count":         len(adminUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getAdminLevel2ByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	ctx := context.Background()
+	doc, err := firestoreClient.Collection("admin_level_2").Doc(id).Get(ctx)
+	if err != nil {
+		http.Error(w, "Administrative division not found", http.StatusNotFound)
+		return
+	}
+
+	var adminUnit AdminLevel2
+	if err := doc.DataTo(&adminUnit); err != nil {
+		http.Error(w, "Failed to parse administrative division", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(adminUnit)
+}
+
+// Administrative Level 3 (Municipalities/Cities) handlers
+func getAdminLevel3Handler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Query parameters
+	countryGID := r.URL.Query().Get("country")
+	stateGID := r.URL.Query().Get("state")
+	countyGID := r.URL.Query().Get("county")
+	limit := 100
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+			limit = l
+		}
+	}
+
+	// Build query
+	query := firestoreClient.Collection("admin_level_3").Where("is_active", "==", true)
+	if countryGID != "" {
+		query = query.Where("country_gid", "==", countryGID)
+	}
+	if stateGID != "" {
+		query = query.Where("state_gid", "==", stateGID)
+	}
+	if countyGID != "" {
+		query = query.Where("county_gid", "==", countyGID)
+	}
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting admin level 3: %v", err)
+		http.Error(w, "Failed to get administrative divisions", http.StatusInternalServerError)
+		return
+	}
+
+	var adminUnits []AdminLevel3
+	for _, doc := range docs {
+		var unit AdminLevel3
+		if err := doc.DataTo(&unit); err != nil {
+			continue
+		}
+		adminUnits = append(adminUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"admin_level_3": adminUnits,
+		"count":         len(adminUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getAdminLevel3ByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	ctx := context.Background()
+	doc, err := firestoreClient.Collection("admin_level_3").Doc(id).Get(ctx)
+	if err != nil {
+		http.Error(w, "Administrative division not found", http.StatusNotFound)
+		return
+	}
+
+	var adminUnit AdminLevel3
+	if err := doc.DataTo(&adminUnit); err != nil {
+		http.Error(w, "Failed to parse administrative division", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(adminUnit)
+}
+
+// Administrative Level 4 (Wards/Villages) handlers
+func getAdminLevel4Handler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Query parameters
+	municipalityGID := r.URL.Query().Get("municipality")
+	limit := 100
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+			limit = l
+		}
+	}
+
+	// Build query
+	query := firestoreClient.Collection("admin_level_4").Where("is_active", "==", true)
+	if municipalityGID != "" {
+		query = query.Where("municipality_gid", "==", municipalityGID)
+	}
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting admin level 4: %v", err)
+		http.Error(w, "Failed to get administrative divisions", http.StatusInternalServerError)
+		return
+	}
+
+	var adminUnits []AdminLevel4
+	for _, doc := range docs {
+		var unit AdminLevel4
+		if err := doc.DataTo(&unit); err != nil {
+			continue
+		}
+		adminUnits = append(adminUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"admin_level_4": adminUnits,
+		"count":         len(adminUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getAdminLevel4ByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	ctx := context.Background()
+	doc, err := firestoreClient.Collection("admin_level_4").Doc(id).Get(ctx)
+	if err != nil {
+		http.Error(w, "Administrative division not found", http.StatusNotFound)
+		return
+	}
+
+	var adminUnit AdminLevel4
+	if err := doc.DataTo(&adminUnit); err != nil {
+		http.Error(w, "Failed to parse administrative division", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(adminUnit)
+}
+
+// Administrative Level 5 (Neighborhoods) handlers
+func getAdminLevel5Handler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Query parameters
+	wardGID := r.URL.Query().Get("ward")
+	limit := 100
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+			limit = l
+		}
+	}
+
+	// Build query
+	query := firestoreClient.Collection("admin_level_5").Where("is_active", "==", true)
+	if wardGID != "" {
+		query = query.Where("ward_gid", "==", wardGID)
+	}
+	query = query.Limit(limit)
+
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error getting admin level 5: %v", err)
+		http.Error(w, "Failed to get administrative divisions", http.StatusInternalServerError)
+		return
+	}
+
+	var adminUnits []AdminLevel5
+	for _, doc := range docs {
+		var unit AdminLevel5
+		if err := doc.DataTo(&unit); err != nil {
+			continue
+		}
+		adminUnits = append(adminUnits, unit)
+	}
+
+	response := map[string]interface{}{
+		"admin_level_5": adminUnits,
+		"count":         len(adminUnits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func getAdminLevel5ByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	ctx := context.Background()
+	doc, err := firestoreClient.Collection("admin_level_5").Doc(id).Get(ctx)
+	if err != nil {
+		http.Error(w, "Administrative division not found", http.StatusNotFound)
+		return
+	}
+
+	var adminUnit AdminLevel5
+	if err := doc.DataTo(&adminUnit); err != nil {
+		http.Error(w, "Failed to parse administrative division", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(adminUnit)
+}
+
+// Comprehensive location lookup handler
+func getLocationLookupHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	// Parse coordinates
+	lat, err := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
+	if err != nil {
+		http.Error(w, "Invalid lat parameter", http.StatusBadRequest)
+		return
+	}
+
+	lon, err := strconv.ParseFloat(r.URL.Query().Get("lon"), 64)
+	if err != nil {
+		http.Error(w, "Invalid lon parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Find containing administrative boundaries at all levels
+	response := map[string]interface{}{
+		"lat": lat,
+		"lon": lon,
+		"location": map[string]interface{}{},
+	}
+
+	// Natural Earth hierarchy (countries, map units, etc.)
+	naturalEarthBoundaries := []map[string]interface{}{}
+
+	// Check sovereign states
+	if states := findContainingEntities(ctx, "sovereign_states", lat, lon); len(states) > 0 {
+		naturalEarthBoundaries = append(naturalEarthBoundaries, map[string]interface{}{
+			"type":     "sovereign_state",
+			"entities": states,
+		})
+		if len(states) > 0 {
+			response["location"].(map[string]interface{})["sovereign_state"] = states[0]
+		}
+	}
+
+	// Check countries
+	if countries := findContainingEntities(ctx, "countries", lat, lon); len(countries) > 0 {
+		naturalEarthBoundaries = append(naturalEarthBoundaries, map[string]interface{}{
+			"type":     "country",
+			"entities": countries,
+		})
+		if len(countries) > 0 {
+			response["location"].(map[string]interface{})["country"] = countries[0]
+		}
+	}
+
+	// Check map units
+	if units := findContainingEntities(ctx, "map_units", lat, lon); len(units) > 0 {
+		naturalEarthBoundaries = append(naturalEarthBoundaries, map[string]interface{}{
+			"type":     "map_unit",
+			"entities": units,
+		})
+		if len(units) > 0 {
+			response["location"].(map[string]interface{})["map_unit"] = units[0]
+		}
+	}
+
+	// Check map subunits
+	if subunits := findContainingEntities(ctx, "map_subunits", lat, lon); len(subunits) > 0 {
+		naturalEarthBoundaries = append(naturalEarthBoundaries, map[string]interface{}{
+			"type":     "map_subunit",
+			"entities": subunits,
+		})
+		if len(subunits) > 0 {
+			response["location"].(map[string]interface{})["map_subunit"] = subunits[0]
+		}
+	}
+
+	// GADM administrative hierarchy
+	gadmBoundaries := []map[string]interface{}{}
+
+	// Check administrative levels 1-5
+	adminCollections := []string{"admin_level_1", "admin_level_2", "admin_level_3", "admin_level_4", "admin_level_5"}
+	adminTypes := []string{"state_province", "county_district", "municipality_city", "ward_village", "neighborhood"}
+
+	for i, collection := range adminCollections {
+		if adminUnits := findContainingEntities(ctx, collection, lat, lon); len(adminUnits) > 0 {
+			gadmBoundaries = append(gadmBoundaries, map[string]interface{}{
+				"type":     adminTypes[i],
+				"entities": adminUnits,
+			})
+			
+			// Add to structured location
+			levelKey := adminTypes[i]
+			if len(adminUnits) > 0 {
+				response["location"].(map[string]interface{})[levelKey] = adminUnits[0]
+			}
+		}
+	}
+
+	// Combine all boundaries
+	response["natural_earth_boundaries"] = naturalEarthBoundaries
+	response["gadm_boundaries"] = gadmBoundaries
+	response["total_boundaries"] = len(naturalEarthBoundaries) + len(gadmBoundaries)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Utility functions

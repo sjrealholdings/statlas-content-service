@@ -122,3 +122,16 @@ import-natural-earth:
 import-natural-earth-dry-run:
 	@echo "Natural Earth data import (dry run)..."
 	python3 scripts/import_natural_earth_data.py --project-id $(PROJECT_ID) --dry-run
+
+# Import GADM administrative boundaries
+.PHONY: import-gadm
+import-gadm:
+	@echo "Importing GADM administrative boundaries..."
+	python3 scripts/import_gadm_data.py
+	@echo "GADM data import complete!"
+
+# Import GADM administrative boundaries (dry run)
+.PHONY: import-gadm-dry-run
+import-gadm-dry-run:
+	@echo "GADM administrative boundaries import (dry run)..."
+	python3 scripts/import_gadm_data.py --dry-run
