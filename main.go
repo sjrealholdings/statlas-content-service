@@ -489,46 +489,42 @@ func getCountryPolygonHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Search across all geographic collections
-	collections := []string{"countries", "sovereign_states", "map_units"}
-	
-	for _, collection := range collections {
-		doc, err := firestoreClient.Collection(collection).Doc(countryID).Get(ctx)
-		if err != nil {
-			continue // Try next collection
-		}
-
-		var data map[string]interface{}
-		if err := doc.DataTo(&data); err != nil {
-			continue
-		}
-
-		// Check if this document is active and has geometry
-		if active, ok := data["is_active"].(bool); !ok || !active {
-			continue
-		}
-
-		geometry, ok := data["geometry"].(string)
-		if !ok || geometry == "" {
-			continue
-		}
-
-		// Return the geometry as GeoJSON
-		response := map[string]interface{}{
-			"id":       countryID,
-			"name":     data["name"],
-			"type":     "country",
-			"geometry": geometry,
-			"bounds":   data["bounds"],
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+	// Only search in countries collection to avoid double-counting
+	doc, err := firestoreClient.Collection("countries").Doc(countryID).Get(ctx)
+	if err != nil {
+		http.Error(w, "Country not found", http.StatusNotFound)
 		return
 	}
 
-	// Not found in any collection
-	http.Error(w, "Country not found", http.StatusNotFound)
+	var data map[string]interface{}
+	if err := doc.DataTo(&data); err != nil {
+		http.Error(w, "Failed to parse country data", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if this document is active and has geometry
+	if active, ok := data["is_active"].(bool); !ok || !active {
+		http.Error(w, "Country not active", http.StatusNotFound)
+		return
+	}
+
+	geometry, ok := data["geometry"].(string)
+	if !ok || geometry == "" {
+		http.Error(w, "Country geometry not available", http.StatusNotFound)
+		return
+	}
+
+	// Return the geometry as GeoJSON
+	response := map[string]interface{}{
+		"id":       countryID,
+		"name":     data["name"],
+		"type":     "country",
+		"geometry": geometry,
+		"bounds":   data["bounds"],
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // getContinentPolygonsHandler returns all country polygons for a specific continent
@@ -539,41 +535,38 @@ func getContinentPolygonsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var allPolygons []map[string]interface{}
 
-	// Search across all geographic collections
-	collections := []string{"countries", "sovereign_states", "map_units"}
-	
-	for _, collection := range collections {
-		query := firestoreClient.Collection(collection).
-			Where("is_active", "==", true).
-			Where("continent", "==", continent)
+	// Only search in countries collection to avoid double-counting
+	query := firestoreClient.Collection("countries").
+		Where("is_active", "==", true).
+		Where("continent", "==", continent)
 
-		docs, err := query.Documents(ctx).GetAll()
-		if err != nil {
-			log.Printf("Error querying %s collection: %v", collection, err)
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error querying countries collection: %v", err)
+		http.Error(w, "Failed to fetch continent data", http.StatusInternalServerError)
+		return
+	}
+
+	for _, doc := range docs {
+		var data map[string]interface{}
+		if err := doc.DataTo(&data); err != nil {
 			continue
 		}
 
-		for _, doc := range docs {
-			var data map[string]interface{}
-			if err := doc.DataTo(&data); err != nil {
-				continue
-			}
-
-			geometry, ok := data["geometry"].(string)
-			if !ok || geometry == "" {
-				continue
-			}
-
-			polygon := map[string]interface{}{
-				"id":       data["id"],
-				"name":     data["name"],
-				"type":     collection,
-				"geometry": geometry,
-				"bounds":   data["bounds"],
-			}
-
-			allPolygons = append(allPolygons, polygon)
+		geometry, ok := data["geometry"].(string)
+		if !ok || geometry == "" {
+			continue
 		}
+
+		polygon := map[string]interface{}{
+			"id":       data["id"],
+			"name":     data["name"],
+			"type":     "country",
+			"geometry": geometry,
+			"bounds":   data["bounds"],
+		}
+
+		allPolygons = append(allPolygons, polygon)
 	}
 
 	response := map[string]interface{}{
@@ -591,46 +584,43 @@ func getWorldPolygonsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var allPolygons []map[string]interface{}
 
-	// Search across all geographic collections
-	collections := []string{"countries", "sovereign_states", "map_units"}
-	
-	for _, collection := range collections {
-		query := firestoreClient.Collection(collection).
-			Where("is_active", "==", true)
+		// Only search in countries collection to avoid double-counting
+	query := firestoreClient.Collection("countries").
+		Where("is_active", "==", true)
 
-		docs, err := query.Documents(ctx).GetAll()
-		if err != nil {
-			log.Printf("Error querying %s collection: %v", collection, err)
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error querying countries collection: %v", err)
+		http.Error(w, "Failed to fetch world data", http.StatusInternalServerError)
+		return
+	}
+
+	for _, doc := range docs {
+		var data map[string]interface{}
+		if err := doc.DataTo(&data); err != nil {
 			continue
 		}
 
-		for _, doc := range docs {
-			var data map[string]interface{}
-			if err := doc.DataTo(&data); err != nil {
-				continue
-			}
-
-			geometry, ok := data["geometry"].(string)
-			if !ok || geometry == "" {
-				continue
-			}
-
-			polygon := map[string]interface{}{
-				"id":        data["id"],
-				"name":      data["name"],
-				"type":      collection,
-				"continent": data["continent"],
-				"geometry":  geometry,
-				"bounds":    data["bounds"],
-			}
-
-			allPolygons = append(allPolygons, polygon)
+		geometry, ok := data["geometry"].(string)
+		if !ok || geometry == "" {
+			continue
 		}
+
+		polygon := map[string]interface{}{
+			"id":        data["id"],
+			"name":      data["name"],
+			"type":      "country",
+			"continent": data["continent"],
+			"geometry":  geometry,
+			"bounds":    data["bounds"],
+		}
+
+		allPolygons = append(allPolygons, polygon)
 	}
 
 	response := map[string]interface{}{
-		"world": true,
-		"count": len(allPolygons),
+		"world":    true,
+		"count":    len(allPolygons),
 		"polygons": allPolygons,
 	}
 
