@@ -24,6 +24,9 @@ The Statlas Content Service provides structured geographic and cultural content 
   - `GET /boundaries/containing` — find boundaries containing a point
   - `POST /boundaries/batch-lookup` — bulk boundary queries (for Core Service)
   - `GET /achievements/definitions` — get all achievement definitions
+  - `GET /polygons/country/{id}` — get polygon geometry for a specific country/territory
+  - `GET /polygons/continent/{continent}` — get all country polygons for a continent
+  - `GET /polygons/world` — get all country polygons in the world
   - `GET /health` — health check
 
 ## Requirements

@@ -482,6 +482,162 @@ func findContainingEntities(ctx context.Context, collection string, lat, lon flo
 	return results
 }
 
+// getCountryPolygonHandler returns the polygon geometry for a specific country or territory
+func getCountryPolygonHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	countryID := vars["id"]
+
+	ctx := context.Background()
+
+	// Search across all geographic collections
+	collections := []string{"countries", "sovereign_states", "map_units"}
+	
+	for _, collection := range collections {
+		doc, err := firestoreClient.Collection(collection).Doc(countryID).Get(ctx)
+		if err != nil {
+			continue // Try next collection
+		}
+
+		var data map[string]interface{}
+		if err := doc.DataTo(&data); err != nil {
+			continue
+		}
+
+		// Check if this document is active and has geometry
+		if active, ok := data["is_active"].(bool); !ok || !active {
+			continue
+		}
+
+		geometry, ok := data["geometry"].(string)
+		if !ok || geometry == "" {
+			continue
+		}
+
+		// Return the geometry as GeoJSON
+		response := map[string]interface{}{
+			"id":       countryID,
+			"name":     data["name"],
+			"type":     "country",
+			"geometry": geometry,
+			"bounds":   data["bounds"],
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Not found in any collection
+	http.Error(w, "Country not found", http.StatusNotFound)
+}
+
+// getContinentPolygonsHandler returns all country polygons for a specific continent
+func getContinentPolygonsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	continent := vars["continent"]
+
+	ctx := context.Background()
+	var allPolygons []map[string]interface{}
+
+	// Search across all geographic collections
+	collections := []string{"countries", "sovereign_states", "map_units"}
+	
+	for _, collection := range collections {
+		query := firestoreClient.Collection(collection).
+			Where("is_active", "==", true).
+			Where("continent", "==", continent)
+
+		docs, err := query.Documents(ctx).GetAll()
+		if err != nil {
+			log.Printf("Error querying %s collection: %v", collection, err)
+			continue
+		}
+
+		for _, doc := range docs {
+			var data map[string]interface{}
+			if err := doc.DataTo(&data); err != nil {
+				continue
+			}
+
+			geometry, ok := data["geometry"].(string)
+			if !ok || geometry == "" {
+				continue
+			}
+
+			polygon := map[string]interface{}{
+				"id":       data["id"],
+				"name":     data["name"],
+				"type":     collection,
+				"geometry": geometry,
+				"bounds":   data["bounds"],
+			}
+
+			allPolygons = append(allPolygons, polygon)
+		}
+	}
+
+	response := map[string]interface{}{
+		"continent": continent,
+		"count":     len(allPolygons),
+		"polygons":  allPolygons,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// getWorldPolygonsHandler returns all country polygons in the world
+func getWorldPolygonsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	var allPolygons []map[string]interface{}
+
+	// Search across all geographic collections
+	collections := []string{"countries", "sovereign_states", "map_units"}
+	
+	for _, collection := range collections {
+		query := firestoreClient.Collection(collection).
+			Where("is_active", "==", true)
+
+		docs, err := query.Documents(ctx).GetAll()
+		if err != nil {
+			log.Printf("Error querying %s collection: %v", collection, err)
+			continue
+		}
+
+		for _, doc := range docs {
+			var data map[string]interface{}
+			if err := doc.DataTo(&data); err != nil {
+				continue
+			}
+
+			geometry, ok := data["geometry"].(string)
+			if !ok || geometry == "" {
+				continue
+			}
+
+			polygon := map[string]interface{}{
+				"id":        data["id"],
+				"name":      data["name"],
+				"type":      collection,
+				"continent": data["continent"],
+				"geometry":  geometry,
+				"bounds":    data["bounds"],
+			}
+
+			allPolygons = append(allPolygons, polygon)
+		}
+	}
+
+	response := map[string]interface{}{
+		"world": true,
+		"count": len(allPolygons),
+		"polygons": allPolygons,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	ctx := context.Background()
 	startTime = time.Now()
@@ -576,6 +732,11 @@ func main() {
 
 	// Search & Discovery endpoints
 	router.HandleFunc("/search", requireServiceAuth(searchContentHandler)).Methods("GET", "OPTIONS")
+
+	// Polygon/Geometry endpoints for frontend mapping
+	router.HandleFunc("/polygons/country/{id}", requireServiceAuth(getCountryPolygonHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/polygons/continent/{continent}", requireServiceAuth(getContinentPolygonsHandler)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/polygons/world", requireServiceAuth(getWorldPolygonsHandler)).Methods("GET", "OPTIONS")
 
 	// Admin endpoints (require service auth)
 	router.HandleFunc("/countries", requireServiceAuth(createCountryHandler)).Methods("POST", "OPTIONS")
