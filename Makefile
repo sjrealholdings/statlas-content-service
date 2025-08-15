@@ -10,17 +10,31 @@ IMAGE_URI = $(REGION)-docker.pkg.dev/$(PROJECT_ID)/statlas-services/$(SERVICE_NA
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  build        - Build the Go application"
-	@echo "  test         - Run tests"
-	@echo "  docker-build - Build Docker image locally"
-	@echo "  docker-run   - Run Docker container locally"
-	@echo "  deploy       - Deploy to Google Cloud Run"
-	@echo "  setup-gcp    - Set up GCP project and services"
-	@echo "  clean        - Clean build artifacts"
+	@echo "  generate-docs  - Generate API specification (OpenAPI)"
+	@echo "  sync-api-spec  - Sync API spec to dependent services"
+	@echo "  build          - Build the Go application (includes generate-docs)"
+	@echo "  test           - Run tests"
+	@echo "  docker-build   - Build Docker image locally"
+	@echo "  docker-run     - Run Docker container locally"
+	@echo "  deploy         - Deploy to Google Cloud Run (includes generate-docs)"
+	@echo "  setup-gcp      - Set up GCP project and services"
+	@echo "  clean          - Clean build artifacts"
+
+# Generate API documentation
+.PHONY: generate-docs
+generate-docs:
+	@echo "Generating API specification..."
+	cd scripts && python3 generate_api_spec.py
+	@echo "API specification generated successfully!"
+
+# Sync API specification to dependent services
+.PHONY: sync-api-spec
+sync-api-spec: generate-docs
+	@./scripts/sync_api_spec.sh
 
 # Build the Go application
 .PHONY: build
-build:
+build: generate-docs
 	go build -o bin/main .
 
 # Run tests
@@ -45,7 +59,7 @@ docker-run:
 
 # Deploy to Google Cloud Run
 .PHONY: deploy
-deploy:
+deploy: generate-docs
 	@echo "Deploying $(SERVICE_NAME) to project $(PROJECT_ID)..."
 	# Build and push using Cloud Build
 	gcloud builds submit --tag $(IMAGE_URI) --project $(PROJECT_ID)
@@ -76,6 +90,7 @@ setup-gcp:
 .PHONY: clean
 clean:
 	rm -rf bin/
+	rm -f scripts/api-spec.json scripts/api-spec.yaml
 	docker rmi $(SERVICE_NAME) 2>/dev/null || true
 
 # Development helpers
