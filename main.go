@@ -30,6 +30,7 @@ type SovereignState struct {
 	ISONumerical int       `firestore:"iso_numeric" json:"iso_numeric"`     // ISO 3166-1 numeric
 	FlagURL      string    `firestore:"flag_url" json:"flag_url"`
 	FlagEmoji    string    `firestore:"flag_emoji" json:"flag_emoji"`
+	Continent    string    `firestore:"continent" json:"continent"` // e.g. "Europe", "North America"
 	Bounds       Bounds    `firestore:"bounds" json:"bounds"`
 	Capital      string    `firestore:"capital" json:"capital"`
 	Population   int64     `firestore:"population" json:"population"`
@@ -52,6 +53,7 @@ type Country struct {
 	Level            int       `firestore:"level" json:"level"`           // Natural Earth level (1-2)
 	ISOAlpha2        string    `firestore:"iso_alpha2" json:"iso_alpha2"` // May be empty for sub-countries
 	ISOAlpha3        string    `firestore:"iso_alpha3" json:"iso_alpha3"` // May be empty for sub-countries
+	Continent        string    `firestore:"continent" json:"continent"`   // e.g. "Europe", "North America"
 	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
 	Capital          string    `firestore:"capital" json:"capital"`
 	Population       int64     `firestore:"population" json:"population"`
@@ -74,6 +76,7 @@ type MapUnit struct {
 	AdminLevel       string    `firestore:"admin_level" json:"admin_level"` // Natural Earth admin level
 	ISOAlpha2        string    `firestore:"iso_alpha2" json:"iso_alpha2"`
 	ISOAlpha3        string    `firestore:"iso_alpha3" json:"iso_alpha3"`
+	Continent        string    `firestore:"continent" json:"continent"` // e.g. "North America", "Oceania"
 	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
 	Population       int64     `firestore:"population" json:"population"`
 	AreaKM2          float64   `firestore:"area_km2" json:"area_km2"`
@@ -110,7 +113,7 @@ type AdminLevel1 struct {
 	Name        string    `firestore:"name" json:"name"`               // e.g. "California"
 	CountryGID  string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0 (e.g. "USA")
 	CountryName string    `firestore:"country_name" json:"country_name"`
-	AdminType   string    `firestore:"admin_type" json:"admin_type"`     // Local type name
+	AdminType   string    `firestore:"admin_type" json:"admin_type"`       // Local type name
 	AdminTypeEN string    `firestore:"admin_type_en" json:"admin_type_en"` // English type name (State, Province, etc.)
 	Bounds      Bounds    `firestore:"bounds" json:"bounds"`
 	Geometry    string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
@@ -125,7 +128,7 @@ type AdminLevel2 struct {
 	Name        string    `firestore:"name" json:"name"`               // e.g. "Los Angeles County"
 	CountryGID  string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0
 	CountryName string    `firestore:"country_name" json:"country_name"`
-	StateGID    string    `firestore:"state_gid" json:"state_gid"`     // GADM GID_1
+	StateGID    string    `firestore:"state_gid" json:"state_gid"` // GADM GID_1
 	StateName   string    `firestore:"state_name" json:"state_name"`
 	AdminType   string    `firestore:"admin_type" json:"admin_type"`
 	AdminTypeEN string    `firestore:"admin_type_en" json:"admin_type_en"` // County, District, etc.
@@ -138,16 +141,37 @@ type AdminLevel2 struct {
 
 // AdminLevel3 represents third-level administrative divisions (municipalities, cities)
 type AdminLevel3 struct {
-	ID               string    `firestore:"id" json:"id"`                             // GADM GID_3
-	Name             string    `firestore:"name" json:"name"`                         // e.g. "Los Angeles"
-	CountryGID       string    `firestore:"country_gid" json:"country_gid"`           // GADM GID_0
+	ID          string    `firestore:"id" json:"id"`                   // GADM GID_3
+	Name        string    `firestore:"name" json:"name"`               // e.g. "Los Angeles"
+	CountryGID  string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0
+	CountryName string    `firestore:"country_name" json:"country_name"`
+	StateGID    string    `firestore:"state_gid" json:"state_gid"` // GADM GID_1
+	StateName   string    `firestore:"state_name" json:"state_name"`
+	CountyGID   string    `firestore:"county_gid" json:"county_gid"` // GADM GID_2
+	CountyName  string    `firestore:"county_name" json:"county_name"`
+	AdminType   string    `firestore:"admin_type" json:"admin_type"`
+	AdminTypeEN string    `firestore:"admin_type_en" json:"admin_type_en"` // Municipality, City, etc.
+	Bounds      Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry    string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt   time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive    bool      `firestore:"is_active" json:"is_active"`
+}
+
+// AdminLevel4 represents fourth-level administrative divisions (wards, villages)
+type AdminLevel4 struct {
+	ID               string    `firestore:"id" json:"id"`                   // GADM GID_4
+	Name             string    `firestore:"name" json:"name"`               // e.g. "Downtown Ward"
+	CountryGID       string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0
 	CountryName      string    `firestore:"country_name" json:"country_name"`
-	StateGID         string    `firestore:"state_gid" json:"state_gid"`               // GADM GID_1
+	StateGID         string    `firestore:"state_gid" json:"state_gid"` // GADM GID_1
 	StateName        string    `firestore:"state_name" json:"state_name"`
-	CountyGID        string    `firestore:"county_gid" json:"county_gid"`             // GADM GID_2
+	CountyGID        string    `firestore:"county_gid" json:"county_gid"` // GADM GID_2
 	CountyName       string    `firestore:"county_name" json:"county_name"`
+	MunicipalityGID  string    `firestore:"municipality_gid" json:"municipality_gid"` // GADM GID_3
+	MunicipalityName string    `firestore:"municipality_name" json:"municipality_name"`
 	AdminType        string    `firestore:"admin_type" json:"admin_type"`
-	AdminTypeEN      string    `firestore:"admin_type_en" json:"admin_type_en"`       // Municipality, City, etc.
+	AdminTypeEN      string    `firestore:"admin_type_en" json:"admin_type_en"` // Ward, Village, etc.
 	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
 	Geometry         string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
 	CreatedAt        time.Time `firestore:"created_at" json:"created_at"`
@@ -155,48 +179,27 @@ type AdminLevel3 struct {
 	IsActive         bool      `firestore:"is_active" json:"is_active"`
 }
 
-// AdminLevel4 represents fourth-level administrative divisions (wards, villages)
-type AdminLevel4 struct {
-	ID                 string    `firestore:"id" json:"id"`                               // GADM GID_4
-	Name               string    `firestore:"name" json:"name"`                           // e.g. "Downtown Ward"
-	CountryGID         string    `firestore:"country_gid" json:"country_gid"`             // GADM GID_0
-	CountryName        string    `firestore:"country_name" json:"country_name"`
-	StateGID           string    `firestore:"state_gid" json:"state_gid"`                 // GADM GID_1
-	StateName          string    `firestore:"state_name" json:"state_name"`
-	CountyGID          string    `firestore:"county_gid" json:"county_gid"`               // GADM GID_2
-	CountyName         string    `firestore:"county_name" json:"county_name"`
-	MunicipalityGID    string    `firestore:"municipality_gid" json:"municipality_gid"`   // GADM GID_3
-	MunicipalityName   string    `firestore:"municipality_name" json:"municipality_name"`
-	AdminType          string    `firestore:"admin_type" json:"admin_type"`
-	AdminTypeEN        string    `firestore:"admin_type_en" json:"admin_type_en"`         // Ward, Village, etc.
-	Bounds             Bounds    `firestore:"bounds" json:"bounds"`
-	Geometry           string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
-	CreatedAt          time.Time `firestore:"created_at" json:"created_at"`
-	UpdatedAt          time.Time `firestore:"updated_at" json:"updated_at"`
-	IsActive           bool      `firestore:"is_active" json:"is_active"`
-}
-
 // AdminLevel5 represents fifth-level administrative divisions (neighborhoods, sub-villages)
 type AdminLevel5 struct {
-	ID                 string    `firestore:"id" json:"id"`                               // GADM GID_5
-	Name               string    `firestore:"name" json:"name"`                           // e.g. "Financial District"
-	CountryGID         string    `firestore:"country_gid" json:"country_gid"`             // GADM GID_0
-	CountryName        string    `firestore:"country_name" json:"country_name"`
-	StateGID           string    `firestore:"state_gid" json:"state_gid"`                 // GADM GID_1
-	StateName          string    `firestore:"state_name" json:"state_name"`
-	CountyGID          string    `firestore:"county_gid" json:"county_gid"`               // GADM GID_2
-	CountyName         string    `firestore:"county_name" json:"county_name"`
-	MunicipalityGID    string    `firestore:"municipality_gid" json:"municipality_gid"`   // GADM GID_3
-	MunicipalityName   string    `firestore:"municipality_name" json:"municipality_name"`
-	WardGID            string    `firestore:"ward_gid" json:"ward_gid"`                   // GADM GID_4
-	WardName           string    `firestore:"ward_name" json:"ward_name"`
-	AdminType          string    `firestore:"admin_type" json:"admin_type"`
-	AdminTypeEN        string    `firestore:"admin_type_en" json:"admin_type_en"`         // Neighborhood, Sub-village, etc.
-	Bounds             Bounds    `firestore:"bounds" json:"bounds"`
-	Geometry           string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
-	CreatedAt          time.Time `firestore:"created_at" json:"created_at"`
-	UpdatedAt          time.Time `firestore:"updated_at" json:"updated_at"`
-	IsActive           bool      `firestore:"is_active" json:"is_active"`
+	ID               string    `firestore:"id" json:"id"`                   // GADM GID_5
+	Name             string    `firestore:"name" json:"name"`               // e.g. "Financial District"
+	CountryGID       string    `firestore:"country_gid" json:"country_gid"` // GADM GID_0
+	CountryName      string    `firestore:"country_name" json:"country_name"`
+	StateGID         string    `firestore:"state_gid" json:"state_gid"` // GADM GID_1
+	StateName        string    `firestore:"state_name" json:"state_name"`
+	CountyGID        string    `firestore:"county_gid" json:"county_gid"` // GADM GID_2
+	CountyName       string    `firestore:"county_name" json:"county_name"`
+	MunicipalityGID  string    `firestore:"municipality_gid" json:"municipality_gid"` // GADM GID_3
+	MunicipalityName string    `firestore:"municipality_name" json:"municipality_name"`
+	WardGID          string    `firestore:"ward_gid" json:"ward_gid"` // GADM GID_4
+	WardName         string    `firestore:"ward_name" json:"ward_name"`
+	AdminType        string    `firestore:"admin_type" json:"admin_type"`
+	AdminTypeEN      string    `firestore:"admin_type_en" json:"admin_type_en"` // Neighborhood, Sub-village, etc.
+	Bounds           Bounds    `firestore:"bounds" json:"bounds"`
+	Geometry         string    `firestore:"geometry" json:"geometry"` // GeoJSON geometry as string
+	CreatedAt        time.Time `firestore:"created_at" json:"created_at"`
+	UpdatedAt        time.Time `firestore:"updated_at" json:"updated_at"`
+	IsActive         bool      `firestore:"is_active" json:"is_active"`
 }
 
 // State represents a state/province/region
@@ -438,20 +441,30 @@ func isPointInGeometry(lat, lon float64, geometryJSON string) bool {
 	}
 }
 
-// Helper function to find entities containing a point
+// Helper function to find entities containing a point (EFFICIENT VERSION - USES COMPOSITE INDEXES)
 func findContainingEntities(ctx context.Context, collection string, lat, lon float64) []map[string]interface{} {
 	var results []map[string]interface{}
 
-	// Query all entities in the collection
-	iter := firestoreClient.Collection(collection).Documents(ctx)
-	defer iter.Stop()
+	// Stage 1: Bounding box pre-filter (efficient query using composite indexes)
+	// This dramatically reduces the number of documents we need to check
+	query := firestoreClient.Collection(collection).
+		Where("is_active", "==", true).
+		Where("bounds.min_lat", "<=", lat).
+		Where("bounds.max_lat", ">=", lat).
+		Where("bounds.min_lon", "<=", lon).
+		Where("bounds.max_lon", ">=", lon)
 
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			break
-		}
+	docs, err := query.Documents(ctx).GetAll()
+	if err != nil {
+		log.Printf("Error querying %s collection: %v", collection, err)
+		return results
+	}
 
+	log.Printf("Bounding box filter for %s: %d candidates (lat=%.6f, lon=%.6f)",
+		collection, len(docs), lat, lon)
+
+	// Stage 2: Precise point-in-polygon check on candidates only
+	for _, doc := range docs {
 		var entity map[string]interface{}
 		if err := doc.DataTo(&entity); err != nil {
 			continue
@@ -465,6 +478,7 @@ func findContainingEntities(ctx context.Context, collection string, lat, lon flo
 		}
 	}
 
+	log.Printf("Point-in-polygon results for %s: %d matches", collection, len(results))
 	return results
 }
 
@@ -1212,11 +1226,19 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build hierarchical structure
+	// Build maps for lookups
+	sovereignMap := make(map[string]SovereignState)
+	for _, doc := range sovereignDocs {
+		var sovereign SovereignState
+		if err := doc.DataTo(&sovereign); err != nil {
+			continue
+		}
+		sovereignMap[sovereign.ID] = sovereign
+	}
+
 	var result []map[string]interface{}
 
-	// Process sovereign states first (they get map units)
-	sovereignMap := make(map[string]map[string]interface{})
+	// Process sovereign states first
 	for _, doc := range sovereignDocs {
 		var sovereign SovereignState
 		if err := doc.DataTo(&sovereign); err != nil {
@@ -1224,48 +1246,27 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		entry := map[string]interface{}{
-			"id":            sovereign.ID,
-			"name":          sovereign.Name,
-			"official_name": sovereign.OfficialName,
-			"type":          "sovereign_state",
-			"iso_alpha2":    sovereign.ISOAlpha2,
-			"iso_alpha3":    sovereign.ISOAlpha3,
-			"flag_emoji":    sovereign.FlagEmoji,
-			"capital":       sovereign.Capital,
-			"population":    sovereign.Population,
-			"area_km2":      sovereign.AreaKM2,
-			"bounds":        sovereign.Bounds,
-			"map_units":     []map[string]interface{}{},
+			"code":                 sovereign.ISOAlpha2,
+			"name":                 sovereign.Name,
+			"continent":            sovereign.Continent,
+			"sovereign_state_name": nil, // null for sovereign states
+			"is_territory":         false,
+			"id":                   sovereign.ID,
+			"official_name":        sovereign.OfficialName,
+			"type":                 "sovereign_state",
+			"iso_alpha2":           sovereign.ISOAlpha2,
+			"iso_alpha3":           sovereign.ISOAlpha3,
+			"flag_emoji":           sovereign.FlagEmoji,
+			"capital":              sovereign.Capital,
+			"population":           sovereign.Population,
+			"area_km2":             sovereign.AreaKM2,
+			"bounds":               sovereign.Bounds,
 		}
 
-		sovereignMap[sovereign.ID] = entry
 		result = append(result, entry)
 	}
 
-	// Add map units to their sovereign states
-	for _, doc := range mapUnitDocs {
-		var mapUnit MapUnit
-		if err := doc.DataTo(&mapUnit); err != nil {
-			continue
-		}
-
-		if sovereignEntry, exists := sovereignMap[mapUnit.SovereignStateID]; exists {
-			mapUnitEntry := map[string]interface{}{
-				"id":            mapUnit.ID,
-				"name":          mapUnit.Name,
-				"official_name": mapUnit.OfficialName,
-				"type":          "map_unit",
-				"bounds":        mapUnit.Bounds,
-				"population":    mapUnit.Population,
-				"area_km2":      mapUnit.AreaKM2,
-			}
-
-			mapUnits := sovereignEntry["map_units"].([]map[string]interface{})
-			sovereignEntry["map_units"] = append(mapUnits, mapUnitEntry)
-		}
-	}
-
-	// Add countries that aren't sovereign states
+	// Process countries that aren't sovereign states
 	for _, doc := range countryDocs {
 		var country Country
 		if err := doc.DataTo(&country); err != nil {
@@ -1277,31 +1278,79 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// Determine if it's a territory and get sovereign state name
+		isTerritory := country.SovereignStateID != country.ID && country.SovereignStateID != ""
+		var sovereignStateName interface{} = nil
+		if isTerritory {
+			if sovereignState, exists := sovereignMap[country.SovereignStateID]; exists {
+				sovereignStateName = sovereignState.Name
+			}
+		}
+
 		entry := map[string]interface{}{
-			"id":            country.ID,
-			"name":          country.Name,
-			"official_name": country.OfficialName,
-			"type":          "country",
-			"iso_alpha2":    country.ISOAlpha2,
-			"iso_alpha3":    country.ISOAlpha3,
-			"capital":       country.Capital,
-			"population":    country.Population,
-			"area_km2":      country.AreaKM2,
-			"bounds":        country.Bounds,
-			"map_units":     nil,
+			"code":                 country.ISOAlpha2,
+			"name":                 country.Name,
+			"continent":            country.Continent,
+			"sovereign_state_name": sovereignStateName,
+			"is_territory":         isTerritory,
+			"id":                   country.ID,
+			"official_name":        country.OfficialName,
+			"type":                 "country",
+			"iso_alpha2":           country.ISOAlpha2,
+			"iso_alpha3":           country.ISOAlpha3,
+			"capital":              country.Capital,
+			"population":           country.Population,
+			"area_km2":             country.AreaKM2,
+			"bounds":               country.Bounds,
 		}
 
 		result = append(result, entry)
 	}
 
+	// Process map units (territories/dependencies)
+	for _, doc := range mapUnitDocs {
+		var mapUnit MapUnit
+		if err := doc.DataTo(&mapUnit); err != nil {
+			continue
+		}
+
+		// Map units are always territories
+		var sovereignStateName interface{} = nil
+		if sovereignState, exists := sovereignMap[mapUnit.SovereignStateID]; exists {
+			sovereignStateName = sovereignState.Name
+		}
+
+		entry := map[string]interface{}{
+			"code":                 mapUnit.ISOAlpha2,
+			"name":                 mapUnit.Name,
+			"continent":            mapUnit.Continent,
+			"sovereign_state_name": sovereignStateName,
+			"is_territory":         true,
+			"id":                   mapUnit.ID,
+			"official_name":        mapUnit.OfficialName,
+			"type":                 "map_unit",
+			"iso_alpha2":           mapUnit.ISOAlpha2,
+			"iso_alpha3":           mapUnit.ISOAlpha3,
+			"population":           mapUnit.Population,
+			"area_km2":             mapUnit.AreaKM2,
+			"bounds":               mapUnit.Bounds,
+		}
+
+		result = append(result, entry)
+	}
+
+	// TODO: Get user_id and visited_count from request parameters or user context
+	// For now, using placeholder values as the user context integration is not implemented
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		userID = "unknown"
+	}
+
 	response := map[string]interface{}{
-		"countries": result,
-		"count":     len(result),
-		"metadata": map[string]interface{}{
-			"sovereign_states": len(sovereignDocs),
-			"total_countries":  len(countryDocs),
-			"total_map_units":  len(mapUnitDocs),
-		},
+		"countries":     result,
+		"user_id":       userID,
+		"visited_count": 0, // TODO: Calculate based on user's visited countries
+		"total_count":   len(result),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1899,8 +1948,8 @@ func getLocationLookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Find containing administrative boundaries at all levels
 	response := map[string]interface{}{
-		"lat": lat,
-		"lon": lon,
+		"lat":      lat,
+		"lon":      lon,
 		"location": map[string]interface{}{},
 	}
 
@@ -1964,7 +2013,7 @@ func getLocationLookupHandler(w http.ResponseWriter, r *http.Request) {
 				"type":     adminTypes[i],
 				"entities": adminUnits,
 			})
-			
+
 			// Add to structured location
 			levelKey := adminTypes[i]
 			if len(adminUnits) > 0 {

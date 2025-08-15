@@ -18,6 +18,7 @@ The Statlas Content Service provides structured geographic and cultural content 
 - Collections: `countries/`, `states/`, `cities/`, `landmarks/`, `boundaries/`, `restaurants/`, etc.
 - Endpoints:
   - `GET /countries` — list all countries with flags and basic info
+  - `GET /countries/bulk` — enhanced bulk country data with continent, territory info (for Core Service)
   - `GET /landmarks` — search landmarks with filters
   - `GET /landmarks/nearby` — find landmarks near coordinates
   - `GET /boundaries/containing` — find boundaries containing a point
@@ -332,7 +333,33 @@ python3 scripts/import_boundaries.py --project-id your-project-id
 - **Landmarks**: Curated from UNESCO, TripAdvisor, and Wikipedia
 - **Restaurants**: Michelin Guide official data and OpenStreetMap
 - **Boundaries**: OpenStreetMap and Natural Earth datasets
+- **Administrative Boundaries**: GADM (Global Administrative Areas) dataset
 - **Flags**: Public domain SVG flags from appropriate sources
+
+### Administrative Boundary Coverage
+
+The service provides **9-tier hierarchical administrative boundaries**:
+
+#### ✅ **Natural Earth Data (Global Coverage)**
+- **Sovereign States** (e.g., France and territories)
+- **Countries** (e.g., Greenland separate from Denmark)  
+- **Map Units** (e.g., England, Wales, Scotland, Northern Ireland)
+- **Map Subunits** (e.g., mainland France vs. Corsica)
+
+#### ✅ **GADM Data (170+ Countries)**
+- **Admin Level 1** (States, Provinces, Regions)
+- **Admin Level 2** (Counties, Districts)
+- **Admin Level 3** (Municipalities, Cities)
+- **Admin Level 4** (Wards, Villages)
+- **Admin Level 5** (Neighborhoods, Sectors)
+
+#### ⚠️ **GADM Limitations**
+**22 countries excluded** due to Firestore geometry size limits:
+- Large countries: Russia, Canada, USA, China, Brazil, Australia, India
+- Desert nations: Algeria, Sudan, Libya, Chad, Niger, Angola
+- See [`docs/EXCLUDED_COUNTRIES_GADM.md`](docs/EXCLUDED_COUNTRIES_GADM.md) for complete list
+
+**Impact**: Users in excluded countries get Natural Earth boundaries only (no sub-national administrative data).
 
 ## Implementation notes
 
