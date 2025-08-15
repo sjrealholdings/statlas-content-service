@@ -29,6 +29,8 @@ The Statlas Content Service provides structured geographic and cultural content 
   - `GET /polygons/world` — get all country polygons in the world
   - `GET /health` — health check
 
+See [Polygon API Documentation](docs/POLYGON_API_ENDPOINTS.md) for detailed usage and examples.
+
 ## Requirements
 
 - Go 1.24+

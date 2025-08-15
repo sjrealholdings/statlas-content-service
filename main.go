@@ -584,7 +584,7 @@ func getWorldPolygonsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var allPolygons []map[string]interface{}
 
-		// Only search in countries collection to avoid double-counting
+	// Only search in countries collection to avoid double-counting
 	query := firestoreClient.Collection("countries").
 		Where("is_active", "==", true)
 
