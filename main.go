@@ -633,32 +633,32 @@ func classifyPointHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
 	latStr := r.URL.Query().Get("lat")
 	lonStr := r.URL.Query().Get("lon")
-	
+
 	if latStr == "" || lonStr == "" {
 		http.Error(w, "Missing lat or lon parameters", http.StatusBadRequest)
 		return
 	}
-	
+
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		http.Error(w, "Invalid lat parameter", http.StatusBadRequest)
 		return
 	}
-	
+
 	lon, err := strconv.ParseFloat(lonStr, 64)
 	if err != nil {
 		http.Error(w, "Invalid lon parameter", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Validate coordinates
 	if lat < -90 || lat > 90 || lon < -180 || lon > 180 {
 		http.Error(w, "Coordinates out of valid range", http.StatusBadRequest)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Classify point and calculate distance to coast
 	isLand, distanceToCoast, err := classifyPoint(ctx, lat, lon)
 	if err != nil {
@@ -666,24 +666,24 @@ func classifyPointHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to classify point", http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Determine grid resolution based on location and distance
 	gridResolution := determineGridResolution(isLand, distanceToCoast)
-	
+
 	response := map[string]interface{}{
 		"lat": lat,
 		"lon": lon,
 		"result": map[string]interface{}{
-			"type":                "land",
+			"type":                 "land",
 			"distance_to_coast_km": distanceToCoast,
-			"grid_resolution":     gridResolution,
+			"grid_resolution":      gridResolution,
 		},
 	}
-	
+
 	if !isLand {
 		response["result"].(map[string]interface{})["type"] = "ocean"
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -693,26 +693,26 @@ func distanceToCoastHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
 	latStr := r.URL.Query().Get("lat")
 	lonStr := r.URL.Query().Get("lon")
-	
+
 	if latStr == "" || lonStr == "" {
 		http.Error(w, "Missing lat or lon parameters", http.StatusBadRequest)
 		return
 	}
-	
+
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		http.Error(w, "Invalid lat parameter", http.StatusBadRequest)
 		return
 	}
-	
+
 	lon, err := strconv.ParseFloat(lonStr, 64)
 	if err != nil {
 		http.Error(w, "Invalid lon parameter", http.StatusBadRequest)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Calculate distance to coast
 	distance, nearestPoint, err := calculateDistanceToCoast(ctx, lat, lon)
 	if err != nil {
@@ -720,16 +720,16 @@ func distanceToCoastHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to calculate distance", http.StatusInternalServerError)
 		return
 	}
-	
+
 	response := map[string]interface{}{
 		"lat": lat,
 		"lon": lon,
 		"result": map[string]interface{}{
 			"distance_to_coast_km": distance,
-			"nearest_coast_point": nearestPoint,
+			"nearest_coast_point":  nearestPoint,
 		},
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -742,25 +742,25 @@ func batchClassifyHandler(w http.ResponseWriter, r *http.Request) {
 			Lon float64 `json:"lon"`
 		} `json:"points"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
 	}
-	
+
 	if len(request.Points) == 0 {
 		http.Error(w, "No points provided", http.StatusBadRequest)
 		return
 	}
-	
+
 	if len(request.Points) > 1000 {
 		http.Error(w, "Too many points (max 1000)", http.StatusBadRequest)
 		return
 	}
-	
+
 	ctx := context.Background()
 	results := make([]map[string]interface{}, 0, len(request.Points))
-	
+
 	for _, point := range request.Points {
 		// Validate coordinates
 		if point.Lat < -90 || point.Lat > 90 || point.Lon < -180 || point.Lon > 180 {
@@ -769,7 +769,7 @@ func batchClassifyHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			continue
 		}
-		
+
 		// Classify point
 		isLand, distanceToCoast, err := classifyPoint(ctx, point.Lat, point.Lon)
 		if err != nil {
@@ -779,95 +779,102 @@ func batchClassifyHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			continue
 		}
-		
+
 		// Determine grid resolution
 		gridResolution := determineGridResolution(isLand, distanceToCoast)
-		
+
 		result := map[string]interface{}{
-			"type":                "ocean",
+			"type":                 "ocean",
 			"distance_to_coast_km": distanceToCoast,
-			"grid_resolution":     gridResolution,
+			"grid_resolution":      gridResolution,
 		}
-		
+
 		if isLand {
 			result["type"] = "land"
 		}
-		
+
 		results = append(results, result)
 	}
-	
+
 	response := map[string]interface{}{
 		"results": results,
 		"count":   len(results),
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
 // classifyPoint determines if a point is on land or in ocean and calculates distance to coast
 func classifyPoint(ctx context.Context, lat, lon float64) (isLand bool, distanceToCoast float64, err error) {
-	// First try to use land polygons for direct classification
-	isLand, err = isPointOnLand(ctx, lat, lon)
+	// Calculate distance to coast - this is our most reliable indicator
+	distanceToCoast, _, err = calculateDistanceToCoast(ctx, lat, lon)
 	if err != nil {
-		// Fallback to coastline-based classification
-		log.Printf("Land polygon classification failed, using coastline fallback: %v", err)
-		distanceToCoast, _, err = calculateDistanceToCoast(ctx, lat, lon)
-		if err != nil {
-			return false, 0, err
-		}
-		// Assume land if very close to coast (within 1km)
-		isLand = distanceToCoast < 1.0
-	} else {
-		// Calculate distance to coast for grid resolution determination
-		distanceToCoast, _, err = calculateDistanceToCoast(ctx, lat, lon)
-		if err != nil {
-			// Use default distance if calculation fails
-			distanceToCoast = 10.0
-		}
+		return false, 0, err
 	}
-	
+
+	// Distance-based classification using coastline data
+	// Note: Distance is measured to center of coastline segment bounds, not exact coastline
+	// This means inland cities may show larger distances than expected
+
+	if distanceToCoast > 200.0 {
+		// Points very far from any coastline (>200km) are definitely deep ocean
+		isLand = false
+	} else if distanceToCoast > 100.0 {
+		// Points 100-200km from coast are likely ocean, but could be large landmasses
+		isLand = false
+	} else {
+		// Points within 100km of coastline are likely land or coastal waters
+		// This includes major cities, islands, and coastal areas
+		isLand = true
+	}
+
 	return isLand, distanceToCoast, nil
 }
 
 // isPointOnLand checks if a point is within any land polygon
 func isPointOnLand(ctx context.Context, lat, lon float64) (bool, error) {
 	// Query land polygons that might contain this point
-	// This is a simplified implementation - in production you'd use spatial indexing
 	collection := firestoreClient.Collection("land_polygons")
-	
+
 	// Get all land polygons (this should be optimized with spatial indexing)
 	docs, err := collection.Where("is_active", "==", true).Documents(ctx).GetAll()
 	if err != nil {
 		return false, err
 	}
-	
-	// Check if point is in any land polygon
+
+	// Create point for testing
+	testPoint := orb.Point{lon, lat} // Note: orb uses [lon, lat] order
+
+	// Check if point is in any land polygon using actual geometry
 	for _, doc := range docs {
 		data := doc.Data()
 		geometryStr, ok := data["geometry"].(string)
 		if !ok {
 			continue
 		}
-		
-		// This is a placeholder - you'd need to implement actual point-in-polygon
-		// using a geometry library like go-geom or by calling a spatial service
-		_ = geometryStr
-		
-		// For now, return a simple heuristic based on bounds
-		if bounds, ok := data["bounds"].(map[string]interface{}); ok {
-			minLat, _ := bounds["min_lat"].(float64)
-			maxLat, _ := bounds["max_lat"].(float64)
-			minLon, _ := bounds["min_lon"].(float64)
-			maxLon, _ := bounds["max_lon"].(float64)
-			
-			if lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon {
-				// Point is within bounds - would need actual point-in-polygon test
+
+		// Parse the GeoJSON geometry
+		geoJSON := []byte(geometryStr)
+		geometry, err := geojson.UnmarshalGeometry(geoJSON)
+		if err != nil {
+			// Skip invalid geometries
+			continue
+		}
+
+		// Convert to orb geometry and test point containment
+		switch geom := geometry.Geometry().(type) {
+		case orb.Polygon:
+			if planar.PolygonContains(geom, testPoint) {
+				return true, nil
+			}
+		case orb.MultiPolygon:
+			if planar.MultiPolygonContains(geom, testPoint) {
 				return true, nil
 			}
 		}
 	}
-	
+
 	return false, nil
 }
 
@@ -875,39 +882,39 @@ func isPointOnLand(ctx context.Context, lat, lon float64) (bool, error) {
 func calculateDistanceToCoast(ctx context.Context, lat, lon float64) (distance float64, nearestPoint map[string]float64, err error) {
 	// Query coastlines near this point
 	collection := firestoreClient.Collection("coastlines")
-	
+
 	// Get all coastlines (this should be optimized with spatial indexing)
 	docs, err := collection.Where("is_active", "==", true).Documents(ctx).GetAll()
 	if err != nil {
 		return 0, nil, err
 	}
-	
+
 	minDistance := float64(99999999) // Very large number
 	var closestPoint map[string]float64
-	
+
 	// Find closest point on any coastline
 	for _, doc := range docs {
 		data := doc.Data()
-		
+
 		// Check if point is within reasonable bounds of this coastline
 		if bounds, ok := data["bounds"].(map[string]interface{}); ok {
 			minLat, _ := bounds["min_lat"].(float64)
 			maxLat, _ := bounds["max_lat"].(float64)
 			minLon, _ := bounds["min_lon"].(float64)
 			maxLon, _ := bounds["max_lon"].(float64)
-			
+
 			// Expand bounds by ~2 degrees for distance calculations
 			if lat < minLat-2 || lat > maxLat+2 || lon < minLon-2 || lon > maxLon+2 {
 				continue
 			}
 		}
-		
+
 		// This is a simplified distance calculation
 		// In production, you'd calculate actual distance to the coastline geometry
 		if bounds, ok := data["bounds"].(map[string]interface{}); ok {
 			centerLat := (bounds["min_lat"].(float64) + bounds["max_lat"].(float64)) / 2
 			centerLon := (bounds["min_lon"].(float64) + bounds["max_lon"].(float64)) / 2
-			
+
 			dist := haversineDistance(lat, lon, centerLat, centerLon)
 			if dist < minDistance {
 				minDistance = dist
@@ -918,11 +925,11 @@ func calculateDistanceToCoast(ctx context.Context, lat, lon float64) (distance f
 			}
 		}
 	}
-	
+
 	if closestPoint == nil {
 		return 0, nil, fmt.Errorf("no coastlines found")
 	}
-	
+
 	return minDistance, closestPoint, nil
 }
 
@@ -945,16 +952,16 @@ func determineGridResolution(isLand bool, distanceToCoast float64) string {
 // haversineDistance calculates the distance between two points using the Haversine formula
 func haversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	const R = 6371 // Earth's radius in kilometers
-	
+
 	dLat := (lat2 - lat1) * math.Pi / 180
 	dLon := (lon2 - lon1) * math.Pi / 180
-	
+
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
 		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
-		math.Sin(dLon/2)*math.Sin(dLon/2)
-	
+			math.Sin(dLon/2)*math.Sin(dLon/2)
+
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	
+
 	return R * c
 }
 

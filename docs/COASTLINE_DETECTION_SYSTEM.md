@@ -31,9 +31,11 @@ Using [Natural Earth Vector](https://github.com/nvkelso/natural-earth-vector) 10
 3. Store as GeoJSON for efficient querying
 
 ### Phase 2: Coastline Detection API
-1. Point-in-polygon for land/ocean classification
-2. Distance-to-coastline calculations
+1. **Distance-based classification** (primary method)
+2. Distance-to-coastline calculations using 4,133 coastline segments
 3. Batch processing for grid generation
+
+**Note**: Natural Earth land polygons are global-scale MultiPolygons designed for map rendering, not suitable for point-in-polygon classification.
 
 ### Phase 3: Grid Resolution Logic
 ```

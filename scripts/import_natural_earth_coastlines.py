@@ -32,62 +32,57 @@ class NaturalEarthCoastlineImporter:
         self.project_id = project_id
         self.db = firestore.Client(project=project_id, database='statlas-content')
         
-        # Natural Earth data URLs  
-        self.data_urls = {
-            'coastlines': 'https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/physical/ne_10m_coastline.zip',
-            'land': 'https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/physical/ne_10m_land.zip',
-            'ocean': 'https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/physical/ne_10m_ocean.zip'
-        }
+        # Natural Earth data URLs (GitHub raw files)
+        self.base_url = 'https://github.com/nvkelso/natural-earth-vector/raw/master/10m_physical'
+        self.shapefile_components = ['.shp', '.shx', '.dbf', '.prj', '.cpg']
         
         self.data_dir = 'natural_earth_data'
         
     def download_data(self, data_type: str = 'coastlines') -> str:
-        """Download Natural Earth data."""
-        if data_type not in self.data_urls:
+        """Download Natural Earth shapefile components."""
+        # Map data types to filenames
+        filename_map = {
+            'coastlines': 'ne_10m_coastline',
+            'land': 'ne_10m_land', 
+            'ocean': 'ne_10m_ocean'
+        }
+        
+        if data_type not in filename_map:
             raise ValueError(f"Unknown data type: {data_type}")
             
-        url = self.data_urls[data_type]
-        filename = f"ne_10m_{data_type}.zip"
-        filepath = os.path.join(self.data_dir, filename)
+        base_filename = filename_map[data_type]
+        data_subdir = os.path.join(self.data_dir, data_type)
         
         # Create data directory
-        os.makedirs(self.data_dir, exist_ok=True)
+        os.makedirs(data_subdir, exist_ok=True)
         
-        if os.path.exists(filepath):
-            logger.info(f"File {filename} already exists, skipping download")
-            return filepath
+        # Download all shapefile components
+        logger.info(f"Downloading {data_type} data from Natural Earth GitHub...")
+        
+        for ext in self.shapefile_components:
+            filename = f"{base_filename}{ext}"
+            filepath = os.path.join(data_subdir, filename)
             
-        logger.info(f"Downloading {data_type} data from Natural Earth...")
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-        
-        with open(filepath, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+            if os.path.exists(filepath):
+                logger.info(f"File {filename} already exists, skipping download")
+                continue
                 
-        logger.info(f"Downloaded {filename} successfully")
-        return filepath
-        
-    def extract_shapefile(self, zip_path: str) -> str:
-        """Extract shapefile from zip."""
-        extract_dir = zip_path.replace('.zip', '')
-        
-        if os.path.exists(extract_dir):
-            logger.info(f"Directory {extract_dir} already exists, skipping extraction")
-            return extract_dir
+            url = f"{self.base_url}/{filename}"
+            logger.info(f"Downloading {filename}...")
             
-        logger.info(f"Extracting {zip_path}...")
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
             
-        return extract_dir
+            with open(filepath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    
+        # Return path to the .shp file
+        shp_path = os.path.join(data_subdir, f"{base_filename}.shp")
+        logger.info(f"Downloaded {data_type} shapefile successfully")
+        return shp_path
         
-    def find_shapefile(self, extract_dir: str) -> str:
-        """Find the main shapefile in extracted directory."""
-        for file in os.listdir(extract_dir):
-            if file.endswith('.shp'):
-                return os.path.join(extract_dir, file)
-        raise FileNotFoundError("No shapefile found in extracted directory")
+
         
     def geometry_to_geojson(self, geometry) -> Dict:
         """Convert Shapely geometry to GeoJSON."""
@@ -127,7 +122,7 @@ class NaturalEarthCoastlineImporter:
                 try:
                     # Extract geometry and properties
                     geometry = shapely.geometry.shape(feature['geometry'])
-                    properties = feature['properties'] or {}
+                    properties = dict(feature['properties']) if feature['properties'] else {}
                     
                     # Create document data
                     doc_data = {
@@ -190,7 +185,7 @@ class NaturalEarthCoastlineImporter:
                 try:
                     # Extract geometry and properties
                     geometry = shapely.geometry.shape(feature['geometry'])
-                    properties = feature['properties'] or {}
+                    properties = dict(feature['properties']) if feature['properties'] else {}
                     
                     # Create document data
                     doc_data = {
@@ -244,23 +239,17 @@ def main():
         
         if args.data_type in ['coastlines', 'all']:
             # Download and import coastlines
-            zip_path = importer.download_data('coastlines')
-            extract_dir = importer.extract_shapefile(zip_path)
-            shapefile_path = importer.find_shapefile(extract_dir)
+            shapefile_path = importer.download_data('coastlines')
             
             coastline_count = importer.import_coastlines(shapefile_path, args.dry_run)
             logger.info(f"Coastline import complete: {coastline_count} features")
             
         if args.data_type in ['land-ocean', 'all']:
             # Download and import land polygons
-            land_zip = importer.download_data('land')
-            land_dir = importer.extract_shapefile(land_zip)
-            land_shapefile = importer.find_shapefile(land_dir)
+            land_shapefile = importer.download_data('land')
             
             # Download and import ocean polygons  
-            ocean_zip = importer.download_data('ocean')
-            ocean_dir = importer.extract_shapefile(ocean_zip)
-            ocean_shapefile = importer.find_shapefile(ocean_dir)
+            ocean_shapefile = importer.download_data('ocean')
             
             land_count, ocean_count = importer.import_land_ocean(land_shapefile, ocean_shapefile, args.dry_run)
             logger.info(f"Land-Ocean import complete: {land_count} land, {ocean_count} ocean features")
