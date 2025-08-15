@@ -1236,6 +1236,8 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 		sovereignMap[sovereign.ID] = sovereign
 	}
 
+	// Track processed entities to avoid duplicates
+	processedEntities := make(map[string]bool)
 	var result []map[string]interface{}
 
 	// Process sovereign states first
@@ -1244,6 +1246,9 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 		if err := doc.DataTo(&sovereign); err != nil {
 			continue
 		}
+
+		// Mark as processed
+		processedEntities[sovereign.ID] = true
 
 		entry := map[string]interface{}{
 			"code":                 sovereign.ISOAlpha2,
@@ -1273,8 +1278,8 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Skip if this country is already represented as a sovereign state
-		if _, exists := sovereignMap[country.ID]; exists {
+		// Skip if already processed (sovereign state or duplicate)
+		if processedEntities[country.ID] {
 			continue
 		}
 
@@ -1304,6 +1309,8 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 			"bounds":               country.Bounds,
 		}
 
+		// Mark as processed
+		processedEntities[country.ID] = true
 		result = append(result, entry)
 	}
 
@@ -1311,6 +1318,11 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range mapUnitDocs {
 		var mapUnit MapUnit
 		if err := doc.DataTo(&mapUnit); err != nil {
+			continue
+		}
+
+		// Skip if already processed
+		if processedEntities[mapUnit.ID] {
 			continue
 		}
 
@@ -1336,6 +1348,8 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 			"bounds":               mapUnit.Bounds,
 		}
 
+		// Mark as processed
+		processedEntities[mapUnit.ID] = true
 		result = append(result, entry)
 	}
 
