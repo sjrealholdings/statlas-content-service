@@ -1215,16 +1215,8 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get all map units
-	mapUnitsQuery := firestoreClient.Collection("map_units").
-		Where("is_active", "==", true)
-
-	mapUnitDocs, err := mapUnitsQuery.Documents(ctx).GetAll()
-	if err != nil {
-		log.Printf("Error getting map units: %v", err)
-		http.Error(w, "Failed to get map units", http.StatusInternalServerError)
-		return
-	}
+	// Note: We don't include map_units in the countries endpoint
+	// Map units are separate territorial entities and should be accessed via /map-units endpoint
 
 	// Build maps for lookups
 	sovereignMap := make(map[string]SovereignState)
@@ -1314,44 +1306,8 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 		result = append(result, entry)
 	}
 
-	// Process map units (territories/dependencies)
-	for _, doc := range mapUnitDocs {
-		var mapUnit MapUnit
-		if err := doc.DataTo(&mapUnit); err != nil {
-			continue
-		}
-
-		// Skip if already processed
-		if processedEntities[mapUnit.ID] {
-			continue
-		}
-
-		// Map units are always territories
-		var sovereignStateName interface{} = nil
-		if sovereignState, exists := sovereignMap[mapUnit.SovereignStateID]; exists {
-			sovereignStateName = sovereignState.Name
-		}
-
-		entry := map[string]interface{}{
-			"code":                 mapUnit.ISOAlpha2,
-			"name":                 mapUnit.Name,
-			"continent":            mapUnit.Continent,
-			"sovereign_state_name": sovereignStateName,
-			"is_territory":         true,
-			"id":                   mapUnit.ID,
-			"official_name":        mapUnit.OfficialName,
-			"type":                 "map_unit",
-			"iso_alpha2":           mapUnit.ISOAlpha2,
-			"iso_alpha3":           mapUnit.ISOAlpha3,
-			"population":           mapUnit.Population,
-			"area_km2":             mapUnit.AreaKM2,
-			"bounds":               mapUnit.Bounds,
-		}
-
-		// Mark as processed
-		processedEntities[mapUnit.ID] = true
-		result = append(result, entry)
-	}
+	// Note: Map units are not included in the countries endpoint
+	// They are separate territorial entities available via the /map-units endpoint
 
 	// TODO: Get user_id and visited_count from request parameters or user context
 	// For now, using placeholder values as the user context integration is not implemented
