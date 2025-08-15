@@ -10,15 +10,17 @@ IMAGE_URI = $(REGION)-docker.pkg.dev/$(PROJECT_ID)/statlas-services/$(SERVICE_NA
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  generate-docs  - Generate API specification (OpenAPI)"
-	@echo "  sync-api-spec  - Sync API spec to dependent services"
-	@echo "  build          - Build the Go application (includes generate-docs)"
-	@echo "  test           - Run tests"
-	@echo "  docker-build   - Build Docker image locally"
-	@echo "  docker-run     - Run Docker container locally"
-	@echo "  deploy         - Deploy to Google Cloud Run (includes generate-docs)"
-	@echo "  setup-gcp      - Set up GCP project and services"
-	@echo "  clean          - Clean build artifacts"
+	@echo "  generate-docs         - Generate API specification (OpenAPI)"
+	@echo "  sync-api-spec         - Sync API spec to dependent services"
+	@echo "  build                 - Build the Go application (includes generate-docs)"
+	@echo "  test                  - Run tests"
+	@echo "  docker-build          - Build Docker image locally"
+	@echo "  docker-run            - Run Docker container locally"
+	@echo "  deploy                - Deploy to Google Cloud Run (includes generate-docs)"
+	@echo "  setup-gcp             - Set up GCP project and services"
+	@echo "  import-coastlines     - Import Natural Earth coastline data"
+	@echo "  import-land-ocean     - Import Natural Earth land-ocean polygons"
+	@echo "  clean                 - Clean build artifacts"
 
 # Generate API documentation
 .PHONY: generate-docs
@@ -137,6 +139,24 @@ import-natural-earth:
 import-natural-earth-dry-run:
 	@echo "Natural Earth data import (dry run)..."
 	python3 scripts/import_natural_earth_data.py --project-id $(PROJECT_ID) --dry-run
+
+# Import Natural Earth coastline data
+.PHONY: import-coastlines
+import-coastlines:
+	@echo "Importing Natural Earth coastline data..."
+	python3 scripts/import_natural_earth_coastlines.py --project-id $(PROJECT_ID) --data-type coastlines
+
+# Import Natural Earth coastline data (dry run)
+.PHONY: import-coastlines-dry-run
+import-coastlines-dry-run:
+	@echo "Natural Earth coastline import (dry run)..."
+	python3 scripts/import_natural_earth_coastlines.py --project-id $(PROJECT_ID) --data-type coastlines --dry-run
+
+# Import Natural Earth land-ocean data
+.PHONY: import-land-ocean
+import-land-ocean:
+	@echo "Importing Natural Earth land-ocean data..."
+	python3 scripts/import_natural_earth_coastlines.py --project-id $(PROJECT_ID) --data-type land-ocean
 
 # Note: GADM administrative boundary targets have been removed
 # See docs/GADM_DATA_REMOVAL.md for details
