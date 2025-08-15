@@ -292,9 +292,55 @@ class ContinentUpdater:
             "akrotiri": "Asia",  # British base in Cyprus
             "dhekelia": "Asia",  # British base in Cyprus
             "hong_kong": "Asia",
-            "macau": "Asia",
-            "western_sahara": "Africa",
+            "macau": "Asia", "macao": "Asia",
+            "western_sahara": "Africa", "w_sahara": "Africa",
             "somaliland": "Africa",
+            
+            # Additional mappings for missing countries
+            "united_states_of_america": "North America",
+            "faeroe_is": "Europe", "faroe_islands": "Europe",
+            "gibraltar": "Europe",
+            "guernsey": "Europe", 
+            "jersey": "Europe",
+            "isle_of_man": "Europe",
+            "åland": "Europe", "aland": "Europe",
+            
+            # Antarctic territories  
+            "fr_s_antarctic_lands": "Antarctica",
+            "heard_i_and_mcdonald_is": "Antarctica",
+            "s_geo_and_the_is": "Antarctica", "south_georgia_and_the_south_sandwich_islands": "Antarctica",
+            
+            # Atlantic islands
+            "saint_helena": "Africa", "st_helena": "Africa",
+            
+            # Pacific territories
+            "u_s_minor_outlying_is": "Oceania",
+            "ashmore_and_cartier_is": "Oceania",
+            "coral_sea_is": "Oceania",
+            
+            # Indian Ocean
+            "br_indian_ocean_ter": "Asia", "british_indian_ocean_territory": "Asia",
+            
+            # Disputed/Special zones
+            "n_cyprus": "Asia", "northern_cyprus": "Asia",
+            "cyprus_u_n_buffer_zone": "Asia",
+            "baikonur": "Asia",  # Kazakhstan
+            "siachen_glacier": "Asia",  # India/Pakistan dispute
+            
+            # Uninhabited/Research areas
+            "bir_tawil": "Africa",  # Egypt/Sudan
+            "southern_patagonian_ice_field": "South America",
+            
+            # Pacific reefs/banks
+            "scarborough_reef": "Asia",  # South China Sea
+            "spratly_is": "Asia",  # South China Sea
+            "bajo_nuevo_bank": "North America",  # Caribbean
+            "serranilla_bank": "North America",  # Caribbean
+            "brazilian_i": "South America",  # Brazil
+            "clipperton_i": "North America",  # Pacific, belongs to France but geographically North America
+            
+            # US territories
+            "usnb_guantanamo_bay": "North America",  # Cuba
         }
     
     def get_continent_for_country(self, country_data: dict) -> Optional[str]:
