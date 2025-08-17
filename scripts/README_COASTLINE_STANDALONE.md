@@ -174,6 +174,22 @@ This script can be integrated into your core service in several ways:
 
 When working with this script and making changes to the repository, follow this Git workflow:
 
+### Recent Updates (2025-08-17)
+
+**Countries Database Update:**
+- Successfully updated 245 countries in Firestore with comprehensive data from `countries_info.json`
+- Data includes: population, area, capital, government form, currency, dialing prefix, birth/death rates, coastline info
+- Countries found in both `countries` and `map_units` collections
+- 5 French territories not found (as expected): French Guiana, Guadeloupe, Martinique, Mayotte, Reunion
+- Cleaned up duplicate documents that were accidentally created during the process
+- Final result: 263 countries with comprehensive data, no duplicates
+
+**Scripts Created:**
+- `update_countries_from_json.py` - Updates existing countries with JSON data
+- `check_existing_countries.py` - Lists all countries in the database
+- `check_map_units.py` - Searches map_units collection for specific countries
+- `cleanup_duplicate_countries.py` - Removes duplicate country documents
+
 ### 1. Clean Working Directory
 
 Before merging or pushing changes, ensure your working directory is clean:
