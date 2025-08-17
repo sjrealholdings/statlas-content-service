@@ -1686,17 +1686,6 @@ func getLandmarksNearbyHandler(w http.ResponseWriter, r *http.Request) {
 func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
-	// Get all sovereign states
-	sovereignQuery := firestoreClient.Collection("sovereign_states").
-		Where("is_active", "==", true)
-
-	sovereignDocs, err := sovereignQuery.Documents(ctx).GetAll()
-	if err != nil {
-		log.Printf("Error getting sovereign states: %v", err)
-		http.Error(w, "Failed to get sovereign states", http.StatusInternalServerError)
-		return
-	}
-
 	// Get all countries
 	countriesQuery := firestoreClient.Collection("countries").
 		Where("is_active", "==", true)
@@ -1711,70 +1700,40 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 	// Note: We don't include map_units in the countries endpoint
 	// Map units are separate territorial entities and should be accessed via /map-units endpoint
 
-	// Build maps for lookups
-	sovereignMap := make(map[string]SovereignState)
-	for _, doc := range sovereignDocs {
-		var sovereign SovereignState
-		if err := doc.DataTo(&sovereign); err != nil {
+	// Build sovereign state lookup map from countries that are sovereign states
+	sovereignMap := make(map[string]Country)
+	for _, doc := range countryDocs {
+		var country Country
+		if err := doc.DataTo(&country); err != nil {
 			continue
 		}
-		sovereignMap[sovereign.ID] = sovereign
+		// A country is a sovereign state if its sovereign_state_id equals its own id
+		if country.SovereignStateID == country.ID {
+			sovereignMap[country.ID] = country
+		}
 	}
 
-	// Track processed entities to avoid duplicates
-	processedEntities := make(map[string]bool)
 	var result []map[string]interface{}
 
-	// Process sovereign states first
-	for _, doc := range sovereignDocs {
-		var sovereign SovereignState
-		if err := doc.DataTo(&sovereign); err != nil {
-			continue
-		}
-
-		// Mark as processed
-		processedEntities[sovereign.ID] = true
-
-		entry := map[string]interface{}{
-			"code":                 sovereign.ISOAlpha2,
-			"name":                 sovereign.Name,
-			"continent":            sovereign.Continent,
-			"sovereign_state_name": nil, // null for sovereign states
-			"is_territory":         false,
-			"id":                   sovereign.ID,
-			"official_name":        sovereign.OfficialName,
-			"type":                 "sovereign_state",
-			"iso_alpha2":           sovereign.ISOAlpha2,
-			"iso_alpha3":           sovereign.ISOAlpha3,
-			"flag_emoji":           sovereign.FlagEmoji,
-			"capital":              sovereign.Capital,
-			"population":           sovereign.Population,
-			"area_km2":             sovereign.AreaKM2,
-			"bounds":               sovereign.Bounds,
-		}
-
-		result = append(result, entry)
-	}
-
-	// Process countries that aren't sovereign states
+	// Process all countries
 	for _, doc := range countryDocs {
 		var country Country
 		if err := doc.DataTo(&country); err != nil {
 			continue
 		}
 
-		// Skip if already processed (sovereign state or duplicate)
-		if processedEntities[country.ID] {
-			continue
-		}
-
 		// Determine if it's a territory and get sovereign state name
 		isTerritory := country.SovereignStateID != country.ID && country.SovereignStateID != ""
 		var sovereignStateName interface{} = nil
+		var countryType string = "country"
+
 		if isTerritory {
 			if sovereignState, exists := sovereignMap[country.SovereignStateID]; exists {
 				sovereignStateName = sovereignState.Name
 			}
+		} else {
+			// This is a sovereign state
+			countryType = "sovereign_state"
 		}
 
 		entry := map[string]interface{}{
@@ -1785,7 +1744,7 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 			"is_territory":         isTerritory,
 			"id":                   country.ID,
 			"official_name":        country.OfficialName,
-			"type":                 "country",
+			"type":                 countryType,
 			"iso_alpha2":           country.ISOAlpha2,
 			"iso_alpha3":           country.ISOAlpha3,
 			"capital":              country.Capital,
@@ -1794,8 +1753,6 @@ func getBulkCountriesHandler(w http.ResponseWriter, r *http.Request) {
 			"bounds":               country.Bounds,
 		}
 
-		// Mark as processed
-		processedEntities[country.ID] = true
 		result = append(result, entry)
 	}
 

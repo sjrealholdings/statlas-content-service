@@ -102,12 +102,26 @@ The `/countries/bulk` endpoint now returns enhanced country objects with the fol
 - Continent data should be populated in the database for all entities
 - User context integration placeholder added for future `visited_count` functionality
 
+## Recent Updates (Latest)
+
+### Simplified Data Source (2024)
+- **Optimization**: Modified the `/countries/bulk` endpoint to query only the `countries` collection instead of both `sovereign_states` and `countries` collections
+- **Performance Improvement**: Reduced from 2 database queries to 1 query
+- **Maintained Functionality**: All sovereign state information is still available by building the sovereign state lookup map from countries where `sovereign_state_id == id`
+- **Same Response Format**: No changes to the API response structure - all fields remain identical
+- **Simplified Logic**: Removed complex dual-processing and deduplication logic while preserving all functionality
+
+### Benefits of Single Collection Approach
+- **Reduced Database Load**: 50% fewer database queries
+- **Simplified Maintenance**: Only one collection to maintain for country/sovereign state data
+- **Better Performance**: Faster response times due to fewer database calls
+- **Cleaner Code**: Simplified processing logic without sacrificing functionality
+
 ## Database Schema Impact
 
 The following Firestore collections now include a `continent` field:
-- `sovereign_states`
-- `countries` 
-- `map_units`
+- `countries` (primary source for both countries and sovereign states)
+- `map_units` (accessed via separate endpoint)
 
 ## Testing
 
