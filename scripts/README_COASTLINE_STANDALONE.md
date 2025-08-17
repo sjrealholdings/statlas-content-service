@@ -170,6 +170,121 @@ This script can be integrated into your core service in several ways:
 3. **Direct port** - translate the logic to your preferred language
 4. **Batch preprocessing** - generate grid classifications offline
 
+## Git Workflow: Clean, Merge, and Push
+
+When working with this script and making changes to the repository, follow this Git workflow:
+
+### 1. Clean Working Directory
+
+Before merging or pushing changes, ensure your working directory is clean:
+
+```bash
+# Check current status
+git status
+
+# Add all changes to staging
+git add .
+
+# Or add specific files
+git add scripts/coastline_classifier_standalone.py
+git add scripts/README_COASTLINE_STANDALONE.md
+
+# Commit your changes
+git commit -m "feat: update coastline classifier with new functionality"
+```
+
+### 2. Merge Latest Changes
+
+Before pushing, merge the latest changes from the main branch:
+
+```bash
+# Fetch latest changes from remote
+git fetch origin
+
+# Switch to main branch
+git checkout main
+
+# Pull latest changes
+git pull origin main
+
+# Switch back to your feature branch (if applicable)
+git checkout your-feature-branch
+
+# Merge main into your branch
+git merge main
+```
+
+**Alternative: Rebase workflow**
+```bash
+# Rebase your changes on top of main (cleaner history)
+git rebase main
+```
+
+### 3. Push Changes
+
+After cleaning and merging, push your changes:
+
+```bash
+# Push to remote repository
+git push origin main
+
+# Or push your feature branch
+git push origin your-feature-branch
+
+# Force push after rebase (use with caution)
+git push --force-with-lease origin your-feature-branch
+```
+
+### 4. Handle Merge Conflicts
+
+If conflicts arise during merge:
+
+```bash
+# View conflicted files
+git status
+
+# Edit files to resolve conflicts
+# Look for conflict markers: <<<<<<<, =======, >>>>>>>
+
+# After resolving conflicts, add the files
+git add resolved-file.py
+
+# Continue the merge
+git merge --continue
+
+# Or continue the rebase
+git rebase --continue
+```
+
+### 5. Pre-Push Checklist
+
+Before pushing changes, ensure:
+
+- ✅ All tests pass: `python -m pytest tests/` (if tests exist)
+- ✅ Script runs without errors: `python coastline_classifier_standalone.py classify 40.7128 -74.0060`
+- ✅ Documentation is updated
+- ✅ No sensitive data in commits
+- ✅ Commit messages follow conventional format
+
+### 6. Branch Protection Best Practices
+
+For production repositories:
+
+```bash
+# Create feature branch for changes
+git checkout -b feature/coastline-improvements
+
+# Make your changes and commits
+git add .
+git commit -m "feat: improve coastline classification accuracy"
+
+# Push feature branch
+git push origin feature/coastline-improvements
+
+# Create pull request via GitHub/GitLab UI
+# After review and approval, merge via UI
+```
+
 ## Support
 
 For questions or issues, contact the content-service team or refer to:

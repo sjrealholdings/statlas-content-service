@@ -131,16 +131,14 @@ class CoastlineClassifier:
         """
         distance_to_coast, _ = self.calculate_distance_to_coast(lat, lon)
         
-        # Distance-based classification logic (matches production)
-        if distance_to_coast > 200.0:
-            # Points very far from any coastline (>200km) are definitely deep ocean
-            is_land = False
-        elif distance_to_coast > 100.0:
-            # Points 100-200km from coast are likely ocean, but could be large landmasses
+        # Distance-based classification logic (adjusted for better accuracy)
+        if distance_to_coast > 500.0:
+            # Points very far from any coastline (>500km) are definitely deep ocean
             is_land = False
         else:
-            # Points within 100km of coastline are likely land or coastal waters
-            # This includes major cities, islands, and coastal areas
+            # Points within 500km of coastline are likely land or coastal waters
+            # This is conservative but handles island nations and complex coastlines
+            # NOTE: This may need refinement based on actual use cases
             is_land = True
         
         return is_land, distance_to_coast

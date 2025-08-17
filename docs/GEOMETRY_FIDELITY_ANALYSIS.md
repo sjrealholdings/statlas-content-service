@@ -147,3 +147,5 @@ For **Statlas's core use case** (determining administrative context of user loca
 **Analysis Date**: August 14, 2025  
 **Data Coverage**: 282,046 administrative boundaries across 170+ countries  
 **Test Locations**: Paris, Munich, Kigali - all correctly identified through simplified geometries
+
+
