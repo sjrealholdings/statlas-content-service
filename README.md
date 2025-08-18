@@ -6,12 +6,14 @@ A comprehensive HTTP service for managing geographic reference data, landmarks, 
 
 The Statlas Content Service provides structured geographic and cultural content that enriches the core grid system with meaningful context:
 
-- **Geographic Reference Data**: Countries, states, cities with official names, codes, and boundaries
+- **Geographic Reference Data**: Countries, states, **6,018 cities** with official names, codes, boundaries, and full geographic context
 - **Landmarks & Monuments**: Famous locations with precise coordinates and achievement integration
 - **Points of Interest**: Restaurants (including Michelin), museums, cultural attractions
 - **Administrative Boundaries**: Polygon definitions for countries, cities, parks, and special areas
 - **Multi-language Support**: Localized content with translations
 - **Achievement Integration**: Landmark-based achievements with points and rarity systems
+
+> **🚀 New: Global Cities Collection** - Imported 6,018 cities with population, area, GeoJSON boundaries, and country/state information. See [City Import Documentation](scripts/README_CITY_IMPORT_COMPLETE.md) for details.
 
 - Listens on port `8083`
 - Stores content in Firestore database `statlas-content`
